@@ -1,5 +1,13 @@
-import React, { useEffect, useState } from "react";
-import { View, ActivityIndicator, Button, FlatList } from "react-native";
+
+
+
+
+
+
+
+
+import React, { useCallback, useEffect, useState } from "react";
+import { View, ActivityIndicator, FlatList } from "react-native";
 import { Card } from "@/components/ui/Card";
 import { Text } from "@/components/ui/Text";
 import ProductCard from "../ProductCard";
@@ -17,20 +25,15 @@ interface Product {
 const ProductOfTheDay = () => {
   const [products, setProducts] = useState<Product[] | null>(null);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
 
   const loadProductsOfTheDay = async () => {
     try {
       const productsOfTheDay = await fetchProductOfTheDay();
-
-      // console.log("Products fetched:", productsOfTheDay); // ✅ Log fetched products
-      if (productsOfTheDay.length === 0) {
-        setError("No products available for today.");
-      } else {
-        setProducts(productsOfTheDay);
-      }
+      // Only set products if we have valid ones
+      setProducts(productsOfTheDay && productsOfTheDay.length > 0 ? productsOfTheDay : null);
     } catch (error) {
-      setError(error instanceof Error ? error.message : "Failed to load products");
+      console.error("Failed to load products of the day:", error);
+      setProducts(null);
     } finally {
       setLoading(false);
     }
@@ -40,41 +43,21 @@ const ProductOfTheDay = () => {
     loadProductsOfTheDay();
   }, []);
 
-  const handleProductPress = (productId: string) => {
+  const handleProductPress = useCallback((productId: string) => {
     router.push(`/product/${productId}`);
-  };
+  }, []);
 
-  const handleRetry = () => {
-    setLoading(true);
-    setError(null);
-    loadProductsOfTheDay();
-  };
-
+  // Don't show anything while loading - this avoids flickering
   if (loading) {
-    return (
-      <View className="flex-1 justify-center items-center">
-        <ActivityIndicator size="large" color="#22C55E" />
-      </View>
-    );
+    return null;
   }
 
-  if (error) {
-    return (
-      <View className="flex-1 justify-center items-center">
-        <Text className="text-red-500">{error}</Text>
-        <Button title="Retry" onPress={handleRetry} />
-      </View>
-    );
-  }
-
+  // If no products available or error occurred, don't render anything
   if (!products || products.length === 0) {
-    return (
-      <View className="flex-1 justify-center items-center">
-        <Text className="text-gray-500">No products available for today.</Text>
-      </View>
-    );
+    return null;
   }
 
+  // Only render if we have products
   return (
     <View className="p-4">
       <Card className="bg-yellow-50 p-4 rounded-lg">
@@ -82,9 +65,11 @@ const ProductOfTheDay = () => {
         <FlatList
           data={products}
           keyExtractor={(item) => item.productId}
-          horizontal={true} // Enables horizontal scrolling
-          showsHorizontalScrollIndicator={true} // Shows the scrollbar
-          contentContainerStyle={{ paddingVertical: 10, gap: 10 }} // Adjust spacing
+          horizontal={true}
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={{ paddingVertical: 10, gap: 10 }}
+          initialNumToRender={4}
+          removeClippedSubviews={true}
           renderItem={({ item }) => (
             <ProductCard
               image={{ uri: item.imageUrl }}
