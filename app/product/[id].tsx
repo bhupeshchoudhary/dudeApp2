@@ -292,7 +292,7 @@ const ProductScreen = () => {
                 className="flex-row"
               >
                 {memoizedRelatedProducts.map((relatedProduct) => (
-                  <View className="mr-4">
+                  <View key={relatedProduct.$id} className="mr-4">
                     <ProductCard
                       product={relatedProduct}
                       onPress={() => handleProductPress(relatedProduct.$id)}

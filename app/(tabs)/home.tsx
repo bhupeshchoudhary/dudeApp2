@@ -13,6 +13,7 @@ import ProductOfTheDay from '@/components/customComponents/home/ProdectOfTheDay'
 import TopCategories from '../../components/customComponents/home/TopCategories';
 import FeaturedProducts from '../../components/customComponents/home/FeaturedProducts';
 import { Button } from '@/components/ui/Button';
+import { isPincodeServiceable } from '@/lib/handleLocation';
 
 const Home: React.FC = () => {
   const { location, address, loading, error, getLocation } = useLocation();
@@ -22,6 +23,8 @@ const Home: React.FC = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [errorMessage, setErrorMessage] = useState('');
   const [topCategories, setTopCategories] = useState<Category[]>([]);
+  const [isServiceable, setIsServiceable] = useState(true);
+  const [checkedServiceability, setCheckedServiceability] = useState(false);
 
   useEffect(() => {
     const loadData = async () => {
@@ -42,6 +45,21 @@ const Home: React.FC = () => {
 
     loadData();
   }, []);
+
+  useEffect(() => {
+    const checkServiceability = async () => {
+      if (!loading && address?.postalCode) {
+        const pincode = address.postalCode;
+        const serviceable = await isPincodeServiceable(pincode);
+        setIsServiceable(serviceable);
+        setCheckedServiceability(true);
+      } else if (!loading) {
+        setIsServiceable(false);
+        setCheckedServiceability(true);
+      }
+    };
+    checkServiceability();
+  }, [address?.postalCode, loading]);
 
   const filteredProducts = featuredProducts.filter((product) =>
     product.name.toLowerCase().includes(searchQuery.toLowerCase())
@@ -98,6 +116,14 @@ const Home: React.FC = () => {
 
   return (
     <SafeAreaView className="flex-1 bg-white">
+      {/* Serviceability Warning - only at the top header */}
+      {checkedServiceability && !isServiceable && (
+        <View className="bg-red-100 p-3 flex-row items-center justify-center">
+          <Ionicons name="alert-circle" size={20} color="#dc2626" />
+          <Text className="text-red-700 ml-2" children="This app is not serviceable at your current address. Please update your location." />
+        </View>
+      )}
+
       {/* Header with Location */}
       <View className="bg-green-500 px-4 pb-4">
         <LocationHeader />

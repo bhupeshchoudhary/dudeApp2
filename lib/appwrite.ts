@@ -25,6 +25,8 @@ export const appwriteConfig = {
     productOfTheDayCollectionId:"67a052e00031d601a6b5",
     cartsCollectionId: "6787910e000842462c22",
     locationsCollectionId: "6640c2c3000c0c2c2c2c",
+    pincodesCollectionId: "pincodes",
+    priceMultipliersCollectionId: "priceMultipliers",
 };
 
 // Initialize the client

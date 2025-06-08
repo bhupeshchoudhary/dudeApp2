@@ -79,6 +79,7 @@ const CategoryScreen = () => {
           <View className="flex-row flex-wrap justify-between">
             {products.map((product) => (
               <ProductCard
+                key={product.$id}
                 image={{ uri: product.imageUrl }}
                 name={product.name}
                 price={`₹${product.price}`}
