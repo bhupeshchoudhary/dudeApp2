@@ -33,17 +33,19 @@ export const ProductCard: React.FC<ProductCardProps> = ({
       className="w-full h-32 rounded-lg"
       resizeMode="cover"
     />
-    <Text className="font-bold mt-2" numberOfLines={2}>{name}</Text>
-    {weight && <Text className="text-gray-500 text-sm">{weight}</Text>}
-    <View className="flex-row items-center mt-1">
-      <Text className="font-bold text-lg">{price}</Text>
-      {mrp && (
-        <Text className="text-gray-500 line-through ml-2 text-sm">{mrp}</Text>
-      )}
+    <View className="p-2">
+      <Text className="font-bold mt-2" numberOfLines={2} children={name} />
+      {weight && <Text className="text-gray-500 text-sm" children={weight} />}
+      <View className="flex-row items-center mt-1">
+        <Text className="font-bold text-lg" children={price} />
+        {mrp && (
+          <Text className="text-gray-500 line-through ml-2 text-sm" children={mrp} />
+        )}
+      </View>
     </View>
     {discount && (
-      <View className="bg-red-500 px-2 py-1 rounded absolute top-2 left-2">
-        <Text className="text-white text-xs">{discount}</Text>
+      <View className="absolute top-2 right-2 bg-red-500 px-2 py-1 rounded">
+        <Text className="text-white text-xs" children={discount} />
       </View>
     )}
   </TouchableOpacity>

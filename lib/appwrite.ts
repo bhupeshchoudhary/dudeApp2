@@ -8,6 +8,7 @@ import {
     Query,
     Storage,
   } from "react-native-appwrite";
+
 export const appwriteConfig = {
     endpoint: "https://cloud.appwrite.io/v1",
     platform: "com.dude",
@@ -23,15 +24,17 @@ export const appwriteConfig = {
     topCategoriesCollectionId: "6784f04b001d5ad03d85",
     productOfTheDayCollectionId:"67a052e00031d601a6b5",
     cartsCollectionId: "6787910e000842462c22",
+    locationsCollectionId: "6640c2c3000c0c2c2c2c",
+};
 
-  };
-
-  const client = new Client();
-  export const databases = new Databases(client);
-
-client
+// Initialize the client
+const client = new Client()
   .setEndpoint(appwriteConfig.endpoint)
   .setProject(appwriteConfig.projectId)
   .setPlatform(appwriteConfig.platform);
 
-  export const account = new Account(client);
+// Create instances after client initialization
+export const databases = new Databases(client);
+export const account = new Account(client);
+export const storage = new Storage(client);
+export const avatars = new Avatars(client);

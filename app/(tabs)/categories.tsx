@@ -10,7 +10,7 @@ interface Category {
   $id: string;
   name: string;
   imageUrl: string;
-  categoryId:string
+  categoryId: string;
 }
 
 const Categories = () => {
@@ -19,8 +19,12 @@ const Categories = () => {
 
   useEffect(() => {
     const loadCategories = async () => {
-      const data = await fetchCategories();
-      setCategories(data);
+      try {
+        const data = await fetchCategories();
+        setCategories(data);
+      } catch (error) {
+        console.error('Error loading categories:', error);
+      }
     };
 
     loadCategories();
@@ -33,11 +37,11 @@ const Categories = () => {
   return (
     <View className="flex-1 bg-white">
       {/* Header */}
-      <View className="flex-row items-center p-4 border-b border-gray-200">
+      <View className="flex-row items-center mt-10 p-4 border-b border-gray-200">
         <TouchableOpacity>
           <Ionicons name="arrow-back" size={24} color="black" />
         </TouchableOpacity>
-        <Text className="text-lg font-bold ml-4">Categories</Text>
+        <Text className="text-lg font-bold ml-4" children="Categories" />
       </View>
 
       <ScrollView showsVerticalScrollIndicator={false}>
@@ -47,7 +51,7 @@ const Categories = () => {
               key={category.$id}
               title={category.name}
               image={category.imageUrl}
-              onPress={() => handleCategoryPress(category.categoryId)}
+              onPress={() => handleCategoryPress(category.$id)}
             />
           ))}
         </View>
@@ -73,9 +77,7 @@ const CategoryItem: React.FC<CategoryItemProps> = ({ title, image, onPress }) =>
         className="w-16 h-16 rounded-lg"
         style={{ backgroundColor: '#f3f4f6' }}
       />
-      <Text className="text-center mt-2 text-sm" numberOfLines={2}>
-        {title}
-      </Text>
+      <Text className="text-center mt-2 text-sm" numberOfLines={2} children={title} />
     </View>
   </TouchableOpacity>
 );

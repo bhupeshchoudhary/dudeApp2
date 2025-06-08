@@ -1,50 +1,51 @@
 {
   "expo": {
-    "name": "dude",
-    "slug": "dude",
-    "version": "1.0.0",
+    "name": "Ratana - Retailer Order App",
+    "slug": "ratana-retailer",
+    "version": "1.0.2",
     "orientation": "portrait",
-    "icon": "./assets/images/icon.png",
-    "scheme": "myapp",
-    "userInterfaceStyle": "automatic",
-    "newArchEnabled": true,
+    "icon": "./assets/images/ratana.png",
+    "userInterfaceStyle": "light",
+    "splash": {
+      "image": "./assets/images/ratana.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#ffffff"
+    },
+    "assetBundlePatterns": [
+      "**/*"
+    ],
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "bundleIdentifier": "com.sumit9897.dude"
     },
     "android": {
       "adaptiveIcon": {
-        "foregroundImage": "./assets/images/adaptive-icon.png",
-        "backgroundColor": "#ffffff",
-        "package": "com.dude"
+        "foregroundImage": "./assets/images/ratana.png",
+        "backgroundColor": "#ffffff"
       },
-      "package": "com.sumit9897.dude"
+      "package": "com.sumit9897.dude",
+      "versionCode": 13,
+      "permissions": [
+        "android.permission.ACCESS_COARSE_LOCATION",
+        "android.permission.ACCESS_FINE_LOCATION"
+      ],
+      "buildType": "app-bundle"
     },
     "web": {
-      "bundler": "metro",
-      "output": "static",
-      "favicon": "./assets/images/favicon.png"
+      "favicon": "./assets/images/ratana.png"
     },
     "plugins": [
       "expo-router",
-      [
-        "expo-splash-screen",
-        {
-          "image": "./assets/images/splash-icon.png",
-          "imageWidth": 200,
-          "resizeMode": "contain",
-          "backgroundColor": "#ffffff"
-        }
-      ]
+      "expo-location",
+      "expo-font"
     ],
-    "experiments": {
-      "typedRoutes": true
-    },
+    "scheme": "myapp",
     "extra": {
       "router": {
         "origin": false
       },
       "eas": {
-        "projectId": "2bd493e6-5e9f-4739-8391-436cf7f0d0c5"
+        "projectId": "4d06dd8d-5d6e-4333-bcc9-d5d7a21e0305"
       }
     }
   }

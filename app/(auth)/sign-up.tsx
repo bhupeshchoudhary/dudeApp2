@@ -7,41 +7,118 @@ import {
   KeyboardAvoidingView,
   Platform,
   ScrollView,
+  ActivityIndicator,
+  Image,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Link, router, Redirect } from 'expo-router';
 import Toast from 'react-native-toast-message';
+import { Ionicons } from '@expo/vector-icons';
+import { LinearGradient } from 'expo-linear-gradient';
 
 import { useGlobalContext } from '../../context/GlobalProvider';
 import { createUser } from '../../lib/handleAuth';
 
 const SignUp = () => {
   const { setUser, setIsLogged, isLogged } = useGlobalContext();
+  const [loading, setLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
+  const [acceptTerms, setAcceptTerms] = useState(false);
+
+  // Form states
+  const [formData, setFormData] = useState({
+    name: '',
+    phone: '',
+    email: '',
+    password: '',
+    address: '',
+    shopName: '',
+    pincode: '',
+    retailCode: '',
+  });
 
   // Redirect if already logged in
   if (isLogged) {
     return <Redirect href="/home" />;
   }
 
-  // State for form inputs
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [name, setName] = useState('');
-  const [phone, setPhone] = useState('');
-  const [retailCode, setRetailCode] = useState('');
-  const [address, setAddress] = useState('');
-  const [shopName, setShopName] = useState('');
-  const [pincode, setpincode] = useState(''); // New state for pincode
-
-  // Validate password to ensure it's exactly 8 digits
-  const validatePassword = (password: string) => {
-    const isValidLength = password.length === 8; // Check if password is exactly 8 digits
-
-    if (!isValidLength || isNaN(Number(password))) {
+  const validateForm = () => {
+    // Name validation
+    if (!formData.name.trim()) {
       Toast.show({
         type: 'error',
         text1: 'Error',
-        text2: 'Password must be exactly 8 digits long',
+        text2: 'Please enter your full name',
+      });
+      return false;
+    }
+
+    // Phone validation
+    if (!/^[0-9]{10}$/.test(formData.phone)) {
+      Toast.show({
+        type: 'error',
+        text1: 'Error',
+        text2: 'Please enter a valid 10-digit phone number',
+      });
+      return false;
+    }
+
+    // Email validation
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
+      Toast.show({
+        type: 'error',
+        text1: 'Error',
+        text2: 'Please enter a valid email address',
+      });
+      return false;
+    }
+
+    // Password validation (minimum 6 characters)
+    if (formData.password.length < 6) {
+      Toast.show({
+        type: 'error',
+        text1: 'Error',
+        text2: 'Password must be at least 6 characters long',
+      });
+      return false;
+    }
+
+    // Address validation
+    if (!formData.address.trim()) {
+      Toast.show({
+        type: 'error',
+        text1: 'Error',
+        text2: 'Please enter your address',
+      });
+      return false;
+    }
+
+    // Shop name validation
+    if (!formData.shopName.trim()) {
+      Toast.show({
+        type: 'error',
+        text1: 'Error',
+        text2: 'Please enter your shop name',
+      });
+      return false;
+    }
+
+    // Pincode validation
+    if (!/^[0-9]{6}$/.test(formData.pincode)) {
+      Toast.show({
+        type: 'error',
+        text1: 'Error',
+        text2: 'Please enter a valid 6-digit pincode',
+      });
+      return false;
+    }
+
+    // Terms acceptance validation
+    if (!acceptTerms) {
+      Toast.show({
+        type: 'error',
+        text1: 'Error',
+        text2: 'Please accept the terms and conditions',
       });
       return false;
     }
@@ -50,205 +127,213 @@ const SignUp = () => {
   };
 
   const handleSignup = async () => {
-    // Validate all fields
-    if (
-      name === '' ||
-      phone === '' ||
-      email === '' ||
-      password === '' ||
-      
-      address === '' ||
-      shopName === '' ||
-      pincode === '' // Validate pincode
-    ) {
-      Toast.show({
-        type: 'error',
-        text1: 'Error',
-        text2: 'Please fill in all fields',
-      });
+    if (!validateForm()) {
       return;
     }
 
-    // Validate password
-    if (!validatePassword(password)) {
-      return;
-    }
-
+    setLoading(true);
     try {
-      // Create user with all fields
       const result = await createUser({
-        email,
-        password,
-        name,
-        phone,
-        retailCode,
-        address,
-        shopName,
-        pincode, // Include pincode
+        email: formData.email,
+        password: formData.password,
+        name: formData.name,
+        phone: formData.phone,
+        address: formData.address,
+        shopName: formData.shopName,
+        pincode: formData.pincode,
+        retailCode: formData.retailCode,
       });
+      
       setUser(result);
       setIsLogged(true);
-
-      // Show success toast
+      
       Toast.show({
         type: 'success',
         text1: 'Success',
-        text2: 'User signed up successfully',
+        text2: 'Account created successfully',
       });
-
-      // Redirect to home screen
+      
       router.replace('/home');
     } catch (error) {
-      // Show error toast
-      console.log(error);
       Toast.show({
         type: 'error',
         text1: 'Error',
-        text2: error instanceof Error ? error.message : String(error),
+        text2: error instanceof Error ? error.message : 'Signup failed. Please try again.',
       });
+    } finally {
+      setLoading(false);
     }
   };
 
+  const renderInput = (
+    label: string,
+    value: string,
+    onChangeText: (text: string) => void,
+    placeholder: string,
+    keyboardType: 'default' | 'email-address' | 'numeric' | 'phone-pad' = 'default',
+    secureTextEntry = false,
+    maxLength?: number
+  ) => (
+    <View className="mb-4">
+      <Text className="text-sm font-medium mb-1 text-gray-600">{label}</Text>
+      <View className="relative">
+        <TextInput
+          className="w-full px-4 py-3 rounded-xl bg-white border border-gray-200 shadow-sm"
+          placeholder={placeholder}
+          value={value}
+          onChangeText={onChangeText}
+          keyboardType={keyboardType}
+          secureTextEntry={secureTextEntry}
+          maxLength={maxLength}
+          autoCapitalize="none"
+          placeholderTextColor="#9CA3AF"
+        />
+        {value.length > 0 && (
+          <TouchableOpacity
+            onPress={() => onChangeText('')}
+            className="absolute right-3 top-3"
+          >
+            <Ionicons name="close-circle" size={20} color="#9CA3AF" />
+          </TouchableOpacity>
+        )}
+      </View>
+    </View>
+  );
+
   return (
     <SafeAreaView className="flex-1 bg-white">
-      <KeyboardAvoidingView
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+      <LinearGradient
+        colors={['#f0f9ff', '#ffffff']}
         className="flex-1"
       >
-        <ScrollView
-          contentContainerClassName="flex-grow justify-center"
-          keyboardShouldPersistTaps="handled"
+        <KeyboardAvoidingView
+          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+          className="flex-1"
         >
-          <View className="px-6 py-8 flex-1 justify-center">
-            {/* Header */}
-            <Text className="text-3xl font-bold mb-8 text-center text-gray-800">
-              Create Account
-            </Text>
-
-            {/* Form Container */}
-            <View className="space-y-4">
-              {/* Name Input */}
-              <View>
-                <Text className="text-sm font-medium mb-1 text-gray-700">Full Name</Text>
-                <TextInput
-                  className="w-full px-4 py-3 rounded-lg bg-gray-50 border border-gray-200"
-                  placeholder="Enter your full name"
-                  value={name}
-                  onChangeText={setName}
-                  autoCapitalize="words"
+          <ScrollView
+            contentContainerClassName="flex-grow"
+            keyboardShouldPersistTaps="handled"
+          >
+            <View className="px-6 py-8">
+              {/* Header */}
+              <View className="items-center mb-8">
+                <Image
+                  source={require('../../assets/images/ratana.jpg')}
+                  className="w-20 h-20 rounded-full mb-4"
                 />
-              </View>
-
-              {/* Phone Input */}
-              <View>
-                <Text className="text-sm font-medium mb-1 text-gray-700">Phone Number</Text>
-                <TextInput
-                  className="w-full px-4 py-3 rounded-lg bg-gray-50 border border-gray-200"
-                  placeholder="Enter your phone number"
-                  value={phone}
-                  onChangeText={setPhone}
-                  keyboardType="phone-pad"
-                />
-              </View>
-
-              {/* Email Input */}
-              <View>
-                <Text className="text-sm font-medium mb-1 text-gray-700">Email Address</Text>
-                <TextInput
-                  className="w-full px-4 py-3 rounded-lg bg-gray-50 border border-gray-200"
-                  placeholder="Enter your email"
-                  value={email}
-                  onChangeText={setEmail}
-                  keyboardType="email-address"
-                  autoCapitalize="none"
-                  autoComplete="email"
-                />
-              </View>
-
-              {/* Password Input */}
-              <View>
-                <Text className="text-sm font-medium mb-1 text-gray-700">Password</Text>
-                <TextInput
-                  className="w-full px-4 py-3 rounded-lg bg-gray-50 border border-gray-200"
-                  placeholder="Enter your password (exactly 8 digits)"
-                  value={password}
-                  onChangeText={setPassword}
-                  secureTextEntry
-                  keyboardType="numeric"
-                  maxLength={8} // Restrict to 8 digits
-                />
-              </View>
-
-              {/* Retail Code Input */}
-              {/* <View>
-                <Text className="text-sm font-medium mb-1 text-gray-700">Retail Code</Text>
-                <TextInput
-                  className="w-full px-4 py-3 rounded-lg bg-gray-50 border border-gray-200"
-                  placeholder="Enter your retail code"
-                  value={retailCode}
-                  onChangeText={setRetailCode}
-                  keyboardType="numeric"
-                />
-              </View> */}
-
-              {/* Address Input */}
-              <View>
-                <Text className="text-sm font-medium mb-1 text-gray-700">Address</Text>
-                <TextInput
-                  className="w-full px-4 py-3 rounded-lg bg-gray-50 border border-gray-200"
-                  placeholder="Enter your address"
-                  value={address}
-                  onChangeText={setAddress}
-                />
-              </View>
-
-              {/* Shop Name Input */}
-              <View>
-                <Text className="text-sm font-medium mb-1 text-gray-700">Shop Name</Text>
-                <TextInput
-                  className="w-full px-4 py-3 rounded-lg bg-gray-50 border border-gray-200"
-                  placeholder="Enter your shop name"
-                  value={shopName}
-                  onChangeText={setShopName}
-                />
-              </View>
-
-              {/* Carrier Pin Code Input */}
-              <View>
-                <Text className="text-sm font-medium mb-1 text-gray-700">Carrier Pin Code</Text>
-                <TextInput
-                  className="w-full px-4 py-3 rounded-lg bg-gray-50 border border-gray-200"
-                  placeholder="Enter your carrier pin code"
-                  value={pincode}
-                  onChangeText={setpincode}
-                  keyboardType="numeric"
-                />
-              </View>
-
-              {/* Signup Button */}
-              <TouchableOpacity
-                className="w-full bg-blue-500 py-4 rounded-lg mt-6"
-                onPress={handleSignup}
-                activeOpacity={0.8}
-              >
-                <Text className="text-white text-center font-semibold text-base">
-                  Sign Up
+                <Text className="text-3xl font-bold text-gray-800 mb-2">
+                  Create Account
                 </Text>
+                <Text className="text-gray-600 text-center">
+                  Join us to start your retail journey
+                </Text>
+              </View>
+
+              {/* Form */}
+              {renderInput(
+                'Full Name',
+                formData.name,
+                (text) => setFormData({ ...formData, name: text }),
+                'Enter your full name'
+              )}
+
+              {renderInput(
+                'Phone Number',
+                formData.phone,
+                (text) => setFormData({ ...formData, phone: text }),
+                'Enter your phone number',
+                'phone-pad',
+                false,
+                10
+              )}
+
+              {renderInput(
+                'Email Address',
+                formData.email,
+                (text) => setFormData({ ...formData, email: text }),
+                'Enter your email',
+                'email-address'
+              )}
+
+              {renderInput(
+                'Password',
+                formData.password,
+                (text) => setFormData({ ...formData, password: text }),
+                'Create a password (min. 6 characters)',
+                'default',
+                !showPassword
+              )}
+
+              {renderInput(
+                'Shop Name',
+                formData.shopName,
+                (text) => setFormData({ ...formData, shopName: text }),
+                'Enter your shop name'
+              )}
+
+              {renderInput(
+                'Address',
+                formData.address,
+                (text) => setFormData({ ...formData, address: text }),
+                'Enter your address'
+              )}
+
+              {renderInput(
+                'Pincode',
+                formData.pincode,
+                (text) => setFormData({ ...formData, pincode: text }),
+                'Enter your pincode',
+                'numeric',
+                false,
+                6
+              )}
+
+              {/* Terms and Conditions */}
+              <View className="flex-row items-center mt-4 mb-6">
+                <TouchableOpacity
+                  onPress={() => setAcceptTerms(!acceptTerms)}
+                  className="mr-2"
+                >
+                  <Ionicons
+                    name={acceptTerms ? 'checkbox' : 'square-outline'}
+                    size={24}
+                    color={acceptTerms ? '#3B82F6' : '#9CA3AF'}
+                  />
+                </TouchableOpacity>
+                <Text className="text-gray-600 flex-1">
+                  I agree to the{' '}
+                  <Text className="text-blue-500">Terms and Conditions</Text>
+                </Text>
+              </View>
+
+              {/* Sign Up Button */}
+              <TouchableOpacity
+                className={`w-full py-4 rounded-xl ${
+                  loading ? 'bg-blue-400' : 'bg-blue-500'
+                } shadow-lg`}
+                onPress={handleSignup}
+                disabled={loading}
+              >
+                {loading ? (
+                  <ActivityIndicator color="white" />
+                ) : (
+                  <Text className="text-white text-center font-semibold text-base">
+                    Create Account
+                  </Text>
+                )}
               </TouchableOpacity>
 
               {/* Login Link */}
-              <View className="flex-row justify-center mt-4">
+              <View className="flex-row justify-center mt-6">
                 <Text className="text-gray-600">Already have an account? </Text>
                 <Link href="/(auth)/sign-in">
-                  <Text className="text-blue-500 font-semibold">Log In</Text>
+                  <Text className="text-blue-500 font-semibold">Sign In</Text>
                 </Link>
               </View>
             </View>
-          </View>
-        </ScrollView>
-      </KeyboardAvoidingView>
-
-      {/* Toast Component */}
+          </ScrollView>
+        </KeyboardAvoidingView>
+      </LinearGradient>
       <Toast />
     </SafeAreaView>
   );

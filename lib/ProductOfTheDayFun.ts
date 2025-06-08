@@ -28,15 +28,13 @@ export const fetchProductOfTheDay = async () => {
         const response = await databases.listDocuments(
           appwriteConfig.databaseId,
           appwriteConfig.productscollectionId,
-
-          // actully product id is document id so we can use it directly
-
-          [Query.equal("$id", productId.toString())] // Query by productId
+          [Query.equal("$id", productId.toString())] // Changed back to $id
         );
 
         // Check if product details exist
         if (!response.documents || response.documents.length === 0) {
-          throw new Error(`Product with ID ${productId} not found`);
+          console.warn(`Product with ID ${productId} not found`);
+          return null;
         }
 
         // Extract product details
@@ -50,11 +48,12 @@ export const fetchProductOfTheDay = async () => {
       })
     );
 
-    // Log the fetched products for debugging
-    console.log("Fetched Products:", products);
+    // Filter out null values and log the fetched products
+    const validProducts = products.filter(product => product !== null);
+    console.log("Fetched Products:", validProducts);
 
     // Step 4: Return the fetched products
-    return products;
+    return validProducts;
   } catch (error) {
     console.error("Error in fetchProductOfTheDay:", error);
     throw new Error(error instanceof Error ? error.message : String(error));

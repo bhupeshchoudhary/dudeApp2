@@ -35,13 +35,11 @@ export default function OrdersScreen() {
   );
 
   const renderOrder = ({ item }: { item: Order }) => (
-    <View className="bg-white m-2 p-4 rounded-lg shadow-sm">
+    <View className="bg-white m-2 p-4 rounded-lg shadow-sm mt-10">
       {/* Order ID and Date */}
       <View className="flex-row justify-between items-center mb-2">
-        <Text className="text-gray-600 text-sm">Order #{item.$id.slice(-6)}</Text>
-        <Text className="text-gray-500 text-xs">
-          {new Date(item.createdAt).toLocaleDateString()}
-        </Text>
+        <Text className="text-gray-600 text-sm" children={`Order #${item.$id.slice(-6)}`} />
+        <Text className="text-gray-500 text-xs" children={new Date(item.createdAt).toLocaleDateString()} />
       </View>
 
       {/* Order Status and Amount */}
@@ -54,31 +52,25 @@ export default function OrdersScreen() {
               'bg-blue-500'
             }`} 
           />
-          <Text className="capitalize">{item.status}</Text>
+          <Text className="capitalize" children={item.status} />
         </View>
-        <Text className="font-bold">₹{item.totalAmount}</Text>
+        <Text className="font-bold" children={`₹${item.totalAmount}`} />
       </View>
 
       {/* Items Summary */}
       <View className="mb-3">
         {item.items.map((product, index) => (
-          <View key={index} className="flex-row justify-between py-1">
-            <Text className="text-gray-600">
-              {product.quantity}x {product.name}
-            </Text>
-            <Text className="text-gray-600">₹{product.price}</Text>
+          <View key={product.productId} className="flex-row justify-between py-1">
+            <Text className="text-gray-600" children={`${product.quantity}x ${product.name}`} />
+            <Text className="text-gray-600" children={`₹${product.price}`} />
           </View>
         ))}
       </View>
 
       {/* Delivery Address */}
       <View className="border-t border-gray-200 pt-2">
-        <Text className="text-gray-600 text-sm">
-          Delivering to: {item.deliveryAddress.name}
-        </Text>
-        <Text className="text-gray-500 text-xs">
-          {item.deliveryAddress.address}, {item.deliveryAddress.pincode}
-        </Text>
+        <Text className="text-gray-600 text-sm" children={`Delivering to: ${item.deliveryAddress.name}`} />
+        <Text className="text-gray-500 text-xs" children={`${item.deliveryAddress.address}, ${item.deliveryAddress.pincode}`} />
       </View>
     </View>
   );
@@ -87,12 +79,12 @@ export default function OrdersScreen() {
     <View className="flex-1 bg-gray-50">
       {isLoading ? (
         <View className="flex-1 justify-center items-center">
-          <Text className="text-gray-500">Loading orders...</Text>
+          <Text className="text-gray-500" children="Loading orders..." />
         </View>
       ) : orders.length === 0 ? (
         <View className="flex-1 justify-center items-center">
           <Ionicons name="basket-outline" size={64} color="#9CA3AF" />
-          <Text className="text-gray-500 mt-4">No orders found</Text>
+          <Text className="text-gray-500 mt-4" children="No orders found" />
         </View>
       ) : (
         <FlatList

@@ -4,7 +4,7 @@ import { Text } from '../ui/Text';
 
 interface CategoryCardProps {
   title: string;
-  startingPrice: string;
+  startingPrice?: string;
   image: { uri: string };
   onPress?: () => void;
 }
@@ -22,7 +22,11 @@ export const CategoryCard: React.FC<CategoryCardProps> = ({ title, startingPrice
       className="w-20 h-20"
       resizeMode="cover"
     />
-    <Text className="font-bold mt-2">{title}</Text>
-    <Text className="text-gray-500 text-sm">Starting at {startingPrice}</Text>
+    <View className="p-2">
+      <Text className="font-bold mt-2" children={title} />
+      {startingPrice && (
+        <Text className="text-gray-500 text-sm" children={`Starting at ${startingPrice}`} />
+      )}
+    </View>
   </TouchableOpacity>
 );

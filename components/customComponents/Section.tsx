@@ -12,7 +12,7 @@ interface SectionProps {
 export const Section: React.FC<SectionProps> = ({ title, children, showViewAll, onViewAll }) => (
   <View className="mt-6">
     <View className="flex-row justify-between items-center px-4 mb-4">
-      <Text className="text-lg font-bold">{title}</Text>
+      <Text className="text-lg font-bold" children={title} />
       {showViewAll && (
         <TouchableOpacity 
           activeOpacity={0.7}
@@ -20,7 +20,7 @@ export const Section: React.FC<SectionProps> = ({ title, children, showViewAll, 
           accessibilityRole="button"
           accessibilityLabel={`View all ${title}`}
         >
-          <Text className="text-green-500">View All</Text>
+          <Text className="text-green-500" children="View All" />
         </TouchableOpacity>
       )}
     </View>

@@ -41,9 +41,7 @@ const QuantityModal: React.FC<QuantityModalProps> = ({
       <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
         <View className="flex-1 justify-center items-center bg-black/60 px-4">
           <View className="bg-white max-w-sm w-11/12 rounded-2xl p-6 shadow-lg">
-            <Text className="text-xl font-semibold text-center mb-5">
-              Select Quantity
-            </Text>
+            <Text className="text-xl font-semibold text-center mb-5" children="Select Quantity" />
             
             <TextInput
               value={quantity}
@@ -57,15 +55,13 @@ const QuantityModal: React.FC<QuantityModalProps> = ({
               <Button
                 onPress={onClose}
                 className="bg-gray-100 flex-1 py-3 rounded-lg mr-2"
-              >
-                <Text className="text-gray-900 text-base font-medium">Cancel</Text>
-              </Button>
+                children={<Text className="text-gray-900 text-base font-medium" children="Cancel" />}
+              />
               <Button
                 onPress={handleConfirm}
                 className="bg-blue-600 flex-1 py-3 rounded-lg ml-2"
-              >
-                <Text className="text-white text-base font-medium">Add to Cart</Text>
-              </Button>
+                children={<Text className="text-white text-base font-medium" children="Add to Cart" />}
+              />
             </View>
           </View>
         </View>

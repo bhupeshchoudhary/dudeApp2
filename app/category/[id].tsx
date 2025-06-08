@@ -1,38 +1,52 @@
 // app/category/[id].tsx
 import React, { useEffect, useState } from 'react';
-import { View, ScrollView, ActivityIndicator, Image } from 'react-native';
+import { View, ScrollView, ActivityIndicator } from 'react-native';
 import { router, useLocalSearchParams } from 'expo-router';
 import { Text } from '../../components/ui/Text';
 import { ProductCard } from '../../components/ui/ProductCard';
 import { fetchProductsByCategoryId } from '../../lib/fetchProducts';
 import { Product } from '../../types/productTypes';
+import { Category } from '../../types/categoryTypes';
+import { databases, appwriteConfig } from '../../lib/appwrite';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
 const CategoryScreen = () => {
-  const { id } = useLocalSearchParams(); // Get the category ID from the route
-  const [products, setProducts] = useState<Product[]>([]); // State for products
-  const [isLoading, setIsLoading] = useState(true); // Loading state
-  const [error, setError] = useState(''); // Error state
+  const { id } = useLocalSearchParams();
+  const [products, setProducts] = useState<Product[]>([]);
+  const [category, setCategory] = useState<Category | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
 
-  // Fetch products by category
   useEffect(() => {
-    const loadProducts = async () => {
+    const loadData = async () => {
       try {
         setIsLoading(true);
-      //  console.log("this log from /caategory/[id]",id);
-        const productsData = await fetchProductsByCategoryId(id.toString());
+        const [productsData, categoryData] = await Promise.all([
+          fetchProductsByCategoryId(id.toString()),
+          databases.getDocument(
+            appwriteConfig.databaseId,
+            appwriteConfig.categoriesCollectionId,
+            id.toString()
+          )
+        ]);
         setProducts(productsData);
-      //  console.log("this log from /caategory/[id]",productsData);
+        setCategory({
+          $id: categoryData.$id,
+          name: categoryData.name,
+          imageUrl: categoryData.imageUrl,
+          categoryId: categoryData.categoryId
+        });
       } catch (error) {
-        setError('Failed to fetch products. Please try again.');
+        // Silently handle errors
+        setProducts([]);
+        setCategory(null);
       } finally {
         setIsLoading(false);
       }
     };
 
-    loadProducts();
+    loadData();
   }, [id]);
 
-  // Render loading state
   if (isLoading) {
     return (
       <View className="flex-1 justify-center items-center">
@@ -41,49 +55,42 @@ const CategoryScreen = () => {
     );
   }
 
-  // Render error state
-  if (error) {
+  // If no category or products, show empty state
+  if (!category || products.length === 0) {
     return (
-      <View className="flex-1 justify-center items-center">
-        <Text className="text-red-500">{error}</Text>
-      </View>
-    );
-  }
-
-  // Render empty state
-  if (products.length === 0) {
-    return (
-      <View className="flex-1 justify-center items-center">
-        <Text className="text-gray-600">No products found in this category.</Text>
-      </View>
+      <SafeAreaView className="flex-1 bg-white">
+        <View className="flex-1 justify-center items-center p-4">
+          <Text className="text-gray-500 text-center" children="No products available in this category" />
+        </View>
+      </SafeAreaView>
     );
   }
 
   return (
-    <ScrollView className="flex-1 bg-white">
-      {/* Category Name */}
-      <View className="p-4 bg-green-100">
-        <Text className="text-2xl font-bold">Category Name</Text>
-        <Text className="text-gray-600">Explore products in this category</Text>
+    <SafeAreaView className="flex-1 bg-white">
+      {/* Header */}
+      <View className="bg-green-500 px-4 py-4">
+        <Text className="text-white text-2xl font-bold" children={category.name} />
       </View>
 
-      {/* Product Grid */}
-      <View className="p-4">
-        <View className="flex-row flex-wrap justify-between">
-          {products.map((product) => (
-            <ProductCard
-              key={product.$id}
-              image={{ uri: product.imageUrl }}
-              name={product.name}
-              price={`₹${product.price}`}
-              mrp={product.mrp ? `₹${product.mrp}` : undefined}
-              discount={product.discount ? `${product.discount}% OFF` : undefined}
-              onPress={() =>router.push(`/product/${product.$id}`)}
-            />
-          ))}
+      {/* Products Grid */}
+      <ScrollView className="flex-1">
+        <View className="p-4">
+          <View className="flex-row flex-wrap justify-between">
+            {products.map((product) => (
+              <ProductCard
+                image={{ uri: product.imageUrl }}
+                name={product.name}
+                price={`₹${product.price}`}
+                mrp={product.mrp ? `₹${product.mrp}` : undefined}
+                discount={product.discount ? `${product.discount}% OFF` : undefined}
+                onPress={() => router.push(`/product/${product.$id}`)}
+              />
+            ))}
+          </View>
         </View>
-      </View>
-    </ScrollView>
+      </ScrollView>
+    </SafeAreaView>
   );
 };
 

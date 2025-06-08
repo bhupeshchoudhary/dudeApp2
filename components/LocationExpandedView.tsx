@@ -42,7 +42,7 @@ export const LocationExpandedView: React.FC<LocationExpandedViewProps> = ({
           {/* Header */}
           <View className="p-4 border-b border-gray-200">
             <View className="flex-row items-center justify-between">
-              <Text className="text-lg font-bold">Delivery Location</Text>
+              <Text className="text-lg font-bold" children="Delivery Location" />
               <TouchableOpacity 
                 onPress={onClose}
                 className="p-2"
@@ -105,7 +105,7 @@ export const LocationExpandedView: React.FC<LocationExpandedViewProps> = ({
                 {Platform.OS === 'ios' && (
                   <View className="absolute top-4 left-4 bg-white px-3 py-1 rounded-full shadow-sm flex-row items-center">
                     <View className="w-2 h-2 rounded-full bg-green-500 mr-2" />
-                    <Text className="text-xs text-gray-600">GPS Active</Text>
+                    <Text className="text-xs text-gray-600" children="GPS Active" />
                   </View>
                 )}
               </View>
@@ -118,13 +118,13 @@ export const LocationExpandedView: React.FC<LocationExpandedViewProps> = ({
                   <Ionicons name="location" size={24} color="#22C55E" />
                 </View>
                 <View className="ml-3 flex-1">
-                  <Text className="font-semibold text-lg">Current Location</Text>
+                  <Text className="font-semibold text-lg" children="Current Location" />
                   {loading ? (
-                    <Text className="text-gray-500">Getting your location...</Text>
+                    <Text className="text-gray-500" children="Getting your location..." />
                   ) : error ? (
-                    <Text className="text-red-500">{error}</Text>
+                    <Text className="text-red-500" children={error} />
                   ) : address ? (
-                    <Text className="text-gray-500" numberOfLines={2}>{address.fullAddress}</Text>
+                    <Text className="text-gray-500" numberOfLines={2} children={address.fullAddress} />
                   ) : null}
                 </View>
               </View>
@@ -176,9 +176,7 @@ export const LocationExpandedView: React.FC<LocationExpandedViewProps> = ({
                   onClose();
                 }}
               >
-                <Text className="text-white text-center font-semibold">
-                  Confirm Location
-                </Text>
+                <Text className="text-white text-center font-semibold" children="Confirm Location" />
               </TouchableOpacity>
             </View>
           </ScrollView>
@@ -198,8 +196,8 @@ const AddressDetail: React.FC<AddressDetailProps> = ({ icon, label, value }) => 
   <View className="flex-row items-center mb-3 last:mb-0">
     <Ionicons name={icon} size={20} color="gray" />
     <View className="ml-3 flex-1">
-      <Text className="text-gray-500 text-sm">{label}</Text>
-      <Text className="font-medium" numberOfLines={1}>{value}</Text>
+      <Text className="text-gray-500 text-sm" children={label} />
+      <Text className="font-medium" numberOfLines={1} children={value} />
     </View>
   </View>
 );

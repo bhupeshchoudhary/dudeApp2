@@ -1,62 +1,18 @@
 import React, { useEffect, useState } from 'react';
-import { View, TextInput, TouchableOpacity, Dimensions, FlatList, ScrollView } from 'react-native';
+import { View, TextInput, TouchableOpacity, ScrollView } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
-import {  ProductCard,  } from '../../components/customComponents/ProductCardHome';
-import {Text} from "@/components/ui/Text";
-import {Card} from "@/components/ui/Card";
-import {  QuickLink } from '../../components/customComponents/QuickLink';
-import { Section } from '../../components/customComponents/Section';
-import { CategoryCard } from '../../components/customComponents/CategoryCard';
+import { Text } from "@/components/ui/Text";
 import { useLocation } from '../../hooks/useLocation';
 import { LocationExpandedView } from '../../components/LocationExpandedView';
-import { router } from 'expo-router';
+import { router, useLocalSearchParams } from 'expo-router';
 import { fetchFeaturedProducts, fetchTopCategories } from '../../lib/fetchProducts';
 import { Product } from '../../types/productTypes';
 import { Category } from '@/types/categoryTypes';
-import FastImage from 'react-native-fast-image';
 import ProductOfTheDay from '@/components/customComponents/home/ProdectOfTheDay';
-
-const { width } = Dimensions.get('window');
-
-// Constants
-const IMAGES = {
-  masala: { uri: "https://images.unsplash.com/photo-1596040033229-a9821ebd058d?w=500&q=80" },
-  sugar: { uri: "https://images.unsplash.com/photo-1622484211148-c6b9d8dba7bb?w=500&q=80" },
-  salt: { uri: "https://images.unsplash.com/photo-1626197031507-c17099753214?w=500&q=80" },
-  atta: { uri: "https://images.unsplash.com/photo-1509440159596-0249088772ff?w=500&q=80" },
-  rice: { uri: "https://images.unsplash.com/photo-1586201375761-83865001e31c?w=500&q=80" },
-  oil: { uri: "https://images.unsplash.com/photo-1474979266404-7eaacbcd87c5?w=500&q=80" },
-  fruits: { uri: "https://images.unsplash.com/photo-1619566636858-adf3ef46400b?w=500&q=80" },
-};
-
-const QUICK_LINKS = [
-  { icon: 'basket' as const, title: 'Top Deals' },
-  { icon: 'restaurant' as const, title: 'Cooking Essentials' },
-  { icon: 'fast-food' as const, title: 'Packaged Food' },
-  { icon: 'cafe' as const, title: 'Beverages' },
-];
-
-const BEST_SELLERS = [
-  {
-    id: '1',
-    image: IMAGES.atta,
-    name: "Savaria Shudh Whole Wheat Atta",
-    weight: "10 kg",
-    price: "₹371",
-    mrp: "₹458",
-    discount: "20% OFF"
-  },
-  {
-    id: '2',
-    image: IMAGES.rice,
-    name: "Premium Basmati Rice",
-    weight: "5 kg",
-    price: "₹299",
-    mrp: "₹399",
-    discount: "25% OFF"
-  }
-];
+import TopCategories from '../../components/customComponents/home/TopCategories';
+import FeaturedProducts from '../../components/customComponents/home/FeaturedProducts';
+import { Button } from '@/components/ui/Button';
 
 const Home: React.FC = () => {
   const { location, address, loading, error, getLocation } = useLocation();
@@ -94,7 +50,7 @@ const Home: React.FC = () => {
   if (isLoading) {
     return (
       <View className="flex-1 justify-center items-center">
-        <Text>Loading...</Text>
+        <Text variant="body" children="Loading..." />
       </View>
     );
   }
@@ -102,14 +58,14 @@ const Home: React.FC = () => {
   if (errorMessage) {
     return (
       <View className="flex-1 justify-center items-center">
-        <Text>{errorMessage}</Text>
+        <Text variant="body" children={errorMessage} />
       </View>
     );
   }
 
   const LocationHeader = () => (
     <TouchableOpacity 
-      className="flex-row items-center"
+      className="flex-row items-center pt-4"
       onPress={() => setShowLocationExpanded(true)}
       activeOpacity={0.7}
     >
@@ -117,22 +73,18 @@ const Home: React.FC = () => {
       <View className="ml-2 flex-1">
         {loading ? (
           <>
-            <Text className="text-white font-bold text-lg">Loading...</Text>
-            <Text className="text-white text-sm">Getting your location</Text>
+            <Text className="text-white font-bold text-lg" children="Loading..." />
+            <Text className="text-white text-sm" children="Getting your location" />
           </>
         ) : error ? (
           <>
-            <Text className="text-white font-bold text-lg">Location Error</Text>
-            <Text className="text-white text-sm">{error}</Text>
+            <Text className="text-white font-bold text-lg" children="Location Error" />
+            <Text className="text-white text-sm" children={error} />
           </>
         ) : (
           <>
-            <Text className="text-white font-bold text-lg" numberOfLines={1}>
-              {address?.area || 'Select Location'}
-            </Text>
-            <Text className="text-white text-sm" numberOfLines={1}>
-              {address?.city || 'Set your delivery location'}
-            </Text>
+            <Text className="text-white font-bold text-lg" numberOfLines={1} children={address?.area || 'Select Location'} />
+            <Text className="text-white text-sm" numberOfLines={1} children={address?.city || 'Set your delivery location'} />
           </>
         )}
       </View>
@@ -140,12 +92,8 @@ const Home: React.FC = () => {
     </TouchableOpacity>
   );
 
-  const handleProductPress = (productId: string) => {
-    router.push(`/product/${productId}`);
-  };
-
-  const handleCategoryPress = (categoryId: string) => {
-    router.push(`/category/${categoryId}`);
+  const handleViewAll = (type: string) => {
+    router.push(`/view-all/${type}`);
   };
 
   return (
@@ -175,83 +123,38 @@ const Home: React.FC = () => {
       </View>
 
       <ScrollView className="flex-1" showsVerticalScrollIndicator={false}>
-        {/* Banner */}
-      {/* to do render product of the day */}
-            <ProductOfTheDay/>
-        {/* Quick Links */}
-        {/* <View className="flex-row justify-between px-4 py-2">
-          {QUICK_LINKS.map((link, index) => (
-            <QuickLink 
-              key={index}
-              icon={link.icon}
-              title={link.title}
-              onPress={() => console.log(`Pressed ${link.title}`)}
-            />
-          ))}
-        </View> */}
+        {/* Product of the Day */}
+        <ProductOfTheDay />
 
-        {/* City Best Sellers */}
-        <Section 
-          title="City Best Sellers" 
-          showViewAll
-          onViewAll={() => console.log('View all best sellers')}
-        >
-          <FlatList
-            horizontal
-            data={filteredProducts}
-            keyExtractor={(item) => item.$id}
-            renderItem={({ item }) => (
-              <ProductCard
-                image={{ uri: item.imageUrl }}
-                name={item.name}
-                price={`₹${item.price}`}
-                mrp={item.mrp ? `₹${item.mrp}` : undefined}
-                discount={item.discount ? `${item.discount}% OFF` : undefined}
-                onPress={() => handleProductPress(item.$id)}
+        {/* Top Categories - Only show if we have categories */}
+        {topCategories.length > 0 && (
+          <View className="px-4">
+            <View className="flex-row justify-between items-center mb-4">
+              <Text className="text-xl font-bold" children="Top Categories" />
+              <Button
+                onPress={() => handleViewAll('categories')}
+                className="bg-transparent"
+                children={<Text className="text-blue-500" children="View All" />}
               />
-            )}
-            showsHorizontalScrollIndicator={false}
-            contentContainerStyle={{ paddingHorizontal: 16 }}
-          />
-        </Section>
-
-        {/* Top Categories */}
-        <Section 
-          title="Top Categories"
-          showViewAll
-          onViewAll={() => router.push('/categories')}
-        >
-          <View className="flex-row flex-wrap justify-between px-4">
-            {topCategories.map((category) => (
-              <CategoryCard
-                key={category.$id}
-                title={category.name}
-                startingPrice="Starting at ₹0"
-                image={{ uri: category.imageUrl }}
-                onPress={() => handleCategoryPress(category.categoryId)}
-              />
-            ))}
+            </View>
+            <TopCategories />
           </View>
-        </Section>
+        )}
 
-        {/* Season Essentials */}
-        <Section title="Season Essentials">
-          <FlatList
-            horizontal
-            data={BEST_SELLERS}
-            keyExtractor={(item) => item.id}
-            renderItem={({ item }) => (
-              <ProductCard
-                key={item.id}
-                {...item}
-                large
-                onPress={() => handleProductPress(item.id)}
+        {/* Featured Products - Only show if we have products */}
+        {featuredProducts.length > 0 && (
+          <View className="px-4 mt-6">
+            <View className="flex-row justify-between items-center mb-4">
+              <Text className="text-xl font-bold" children="Featured Products" />
+              <Button
+                onPress={() => handleViewAll('featured')}
+                className="bg-transparent"
+                children={<Text className="text-blue-500" children="View All" />}
               />
-            )}
-            showsHorizontalScrollIndicator={false}
-            contentContainerStyle={{ paddingHorizontal: 16 }}
-          />
-        </Section>
+            </View>
+            <FeaturedProducts />
+          </View>
+        )}
       </ScrollView>
 
       <LocationExpandedView

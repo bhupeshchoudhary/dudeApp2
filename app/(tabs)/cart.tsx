@@ -187,7 +187,7 @@ const CartScreen: React.FC = () => {
         <TouchableOpacity onPress={() => router.back()}>
           <Ionicons name="arrow-back" size={24} color="#000" />
         </TouchableOpacity>
-        <Text className="text-xl font-bold ml-4">Shopping Cart</Text>
+        <Text className="text-xl font-bold ml-4" children="Shopping Cart" />
       </View>
     </View>
   );
@@ -196,7 +196,7 @@ const CartScreen: React.FC = () => {
     return (
       <SafeAreaView className="flex-1 bg-white">
         <View className="flex-1 items-center justify-center">
-          <Text>Loading...</Text>
+          <Text children="Loading..." />
         </View>
       </SafeAreaView>
     );
@@ -211,15 +211,13 @@ const CartScreen: React.FC = () => {
           // Empty Cart View
           <View className="flex-1 items-center justify-center p-4">
             <Ionicons name="cart-outline" size={80} color="#CBD5E0" />
-            <Text className="text-xl font-bold mt-4 text-gray-700">
-              Your cart is empty
-            </Text>
-            <Text className="text-gray-500 text-center mt-2 mb-6">
-              Looks like you haven't added anything to your cart yet
-            </Text>
-            <Button onPress={() => router.push('/home')} className="bg-blue-500 px-8">
-              Start Shopping
-            </Button>
+            <Text className="text-xl font-bold mt-4 text-gray-700" children="Your cart is empty" />
+            <Text className="text-gray-500 text-center mt-2 mb-6" children="Looks like you haven't added anything to your cart yet" />
+            <Button 
+              onPress={() => router.push('/home')} 
+              className="bg-blue-500 px-8"
+              children={<Text className="text-white" children="Start Shopping" />}
+            />
           </View>
         ) : (
           // Cart Items View
@@ -238,20 +236,19 @@ const CartScreen: React.FC = () => {
             {/* Bottom Sheet */}
             <View className="border-t border-gray-200 p-4 bg-white">
               <View className="flex-row justify-between mb-4">
-                <Text className="text-gray-600">Total Amount</Text>
-                <Text className="font-bold">₹{totalAmount}</Text>
+                <Text className="text-gray-600" children="Total Amount" />
+                <Text className="font-bold" children={`₹${totalAmount}`} />
               </View>
               {/* // Update the Button component in the bottom sheet section */}
 <Button
   onPress={ProceedToCheckout}
   className="bg-blue-500"
-  disabled={loading} // Disable button while loading
+  disabled={loading}
+  children={<Text className="text-white" children={loading ? 'Processing...' : 'Proceed to Checkout'} />}
 >
-  <Text>  {loading ? 'Processing...' : 'Proceed to Checkout'}</Text>
-
 </Button>
               <TouchableOpacity onPress={handleClearCart} className="mt-2">
-                <Text className="text-red-500 text-center">Clear Cart</Text>
+                <Text className="text-red-500 text-center" children="Clear Cart" />
               </TouchableOpacity>
             </View>
           </>
@@ -270,8 +267,8 @@ const CartItemCard: React.FC<CartItemCardProps> = React.memo(
         <View className="flex-row">
           <Image source={{ uri: item.imageUrl }} className="w-24 h-24 rounded-lg" />
           <View className="flex-1 ml-4">
-            <Text className="font-medium text-lg">{item.name}</Text>
-            <Text className="text-gray-600 mt-1">₹{item.price}</Text>
+            <Text className="font-medium text-lg" children={item.name} />
+            <Text className="text-gray-600 mt-1" children={`₹${item.price}`} />
 
             {/* Quantity Controls */}
             <View className="flex-row items-center mt-2">
@@ -281,7 +278,7 @@ const CartItemCard: React.FC<CartItemCardProps> = React.memo(
               >
                 <Ionicons name="remove" size={20} color="black" />
               </TouchableOpacity>
-              <Text className="mx-4">{item.quantity}</Text>
+              <Text className="mx-4" children={item.quantity} />
               <TouchableOpacity
                 onPress={() => onUpdateQuantity(item.productId, item.quantity + 1)}
                 className="w-8 h-8 bg-gray-100 rounded-full items-center justify-center"

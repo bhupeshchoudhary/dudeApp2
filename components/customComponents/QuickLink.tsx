@@ -20,6 +20,6 @@ export const QuickLink: React.FC<QuickLinkProps> = ({ icon, title, onPress }) =>
     <View className="w-12 h-12 bg-gray-100 rounded-full items-center justify-center">
       <Ionicons name={icon} size={24} color="#4B5563" />
     </View>
-    <Text className="text-xs mt-1 text-center">{title}</Text>
+    <Text className="text-xs mt-1 text-center" children={title} />
   </TouchableOpacity>
 );

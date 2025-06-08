@@ -7,189 +7,185 @@ import {
     ID,
     Query,
     Storage,
+    AppwriteException,
   } from "react-native-appwrite";
-  import {appwriteConfig} from "./appwrite";
-  import { Product } from "../types/productTypes";
-  import { Category } from "../types/categoryTypes";
-  export async function fetchFeaturedProducts(): Promise<Product[]> {
-    try {
-      const response = await databases.listDocuments(
-        appwriteConfig.databaseId, // Database ID
-        appwriteConfig.productscollectionId, // Collection ID
-        [
-          Query.equal('isFeatured', true) // Fetch only featured products
-        ]
-      );
-  
-      // Cast the documents to Product[]
-      const products = response.documents.map((doc) => ({
-        $collectionId: doc.$collectionId,
-        $createdAt: doc.$createdAt,
-        $databaseId: doc.$databaseId,
-        $id: doc.$id,
-        $permissions: doc.$permissions,
-        $updatedAt: doc.$updatedAt,
-        categoryId: doc.categoryId,
-        createdAt: doc.createdAt,
-        description: doc.description,
-        discount: doc.discount,
-        imageUrl: doc.imageUrl,
-        isFeatured: doc.isFeatured,
-        mrp: doc.mrp,
-        name: doc.name,
-        price: doc.price,
-        unit: doc.unit,
-        productId: doc.productId,
-        stock: doc.stock,
-        updatedAt: doc.updatedAt,
-      }));
-  
-      return products;
-    } catch (error) {
-      console.error('Error fetching products:', error);
-      return []; // Return an empty array in case of error
-    }
+import {appwriteConfig} from "./appwrite";
+import { Product } from "../types/productTypes";
+import { Category } from "../types/categoryTypes";
+
+// Helper function to validate ID
+const isValidId = (id: string): boolean => {
+  return typeof id === 'string' && id.trim().length > 0;
+};
+
+// Helper function to transform document to Product
+const transformToProduct = (doc: any): Product => ({
+  $collectionId: doc.$collectionId,
+  $createdAt: doc.$createdAt,
+  $databaseId: doc.$databaseId,
+  $id: doc.$id,
+  $permissions: doc.$permissions,
+  $updatedAt: doc.$updatedAt,
+  categoryId: doc.categoryId,
+  createdAt: doc.createdAt,
+  description: doc.description,
+  discount: doc.discount,
+  imageUrl: doc.imageUrl,
+  isFeatured: doc.isFeatured,
+  mrp: doc.mrp,
+  name: doc.name,
+  price: doc.price,
+  unit: doc.unit,
+  productId: doc.productId,
+  stock: doc.stock,
+  updatedAt: doc.updatedAt,
+});
+
+export async function fetchFeaturedProducts(): Promise<Product[]> {
+  try {
+    const response = await databases.listDocuments(
+      appwriteConfig.databaseId,
+      appwriteConfig.productscollectionId,
+      [Query.equal('isFeatured', true)]
+    );
+
+    return response.documents.map(transformToProduct);
+  } catch (error) {
+    console.error('Error fetching featured products:', error);
+    throw new Error('Failed to fetch featured products. Please try again later.');
+  }
+}
+
+export async function fetchProductsById(id: string): Promise<Product | null> {
+  if (!isValidId(id)) {
+    throw new Error('Invalid product ID provided');
   }
 
-  export async function fetchProductsById(id: string): Promise<Product | null> {
-    try {
-      const response = await databases.getDocument(
-        appwriteConfig.databaseId, // Database ID
-        appwriteConfig.productscollectionId, // Collection ID
-        id // Product ID
-      );
-  
-      // Transform the response into the Product type
-      const product: Product = {
-        $collectionId: response.$collectionId,
-        $createdAt: response.$createdAt,
-        $databaseId: response.$databaseId,
-        $id: response.$id,
-        $permissions: response.$permissions,
-        $updatedAt: response.$updatedAt,
-        categoryId: response.categoryId,
-        createdAt: response.createdAt,
-        description: response.description,
-        discount: response.discount,
-        imageUrl: response.imageUrl,
-        isFeatured: response.isFeatured,
-        mrp: response.mrp,
-        name: response.name,
-        price: response.price,
-        unit:response.unit,
-        productId: response.productId,
-        stock: response.stock,
-        updatedAt: response.updatedAt,
-      };
-  
-      return product;
-    } catch (error) {
-      console.error('Error fetching product by ID:', error);
-      return null; // Return null in case of error
+  try {
+    const response = await databases.getDocument(
+      appwriteConfig.databaseId,
+      appwriteConfig.productscollectionId,
+      id.trim()
+    );
+
+    return transformToProduct(response);
+  } catch (error) {
+    console.error('Error fetching product by ID:', error);
+    if (error instanceof AppwriteException && error.code === 404) {
+      return null;
     }
+    throw new Error('Failed to fetch product details. Please try again later.');
+  }
+}
+
+export async function fetchProductsByCategoryId(categoryId: string): Promise<Product[]> {
+  if (!isValidId(categoryId)) {
+    return [];
   }
 
-  export async function fetchProductsByCategoryId(categoryId: string): Promise<Product[]> {
-    try {
-      const response = await databases.listDocuments(
-        appwriteConfig.databaseId, // Database ID
-        appwriteConfig.productscollectionId, // Collection ID
-        [
-          Query.equal('categoryId', categoryId) // Fetch products by category
-        ]
-      );
-  
-      // Cast the documents to Product[]
-      const products = response.documents.map((doc) => ({
-        $collectionId: doc.$collectionId,
-        $createdAt: doc.$createdAt,
-        $databaseId: doc.$databaseId,
-        $id: doc.$id,
-        $permissions: doc.$permissions,
-        $updatedAt: doc.$updatedAt,
-        categoryId: doc.categoryId,
-        createdAt: doc.createdAt,
-        description: doc.description,
-        discount: doc.discount,
-        imageUrl: doc.imageUrl,
-        isFeatured: doc.isFeatured,
-        mrp: doc.mrp,
-        name: doc.name,
-        price: doc.price,
-        unit:doc.unit,
-        productId: doc.productId,
-        stock: doc.stock,
-        updatedAt: doc.updatedAt,
-      }));
-  
-      return products;
-    } catch (error) {
-      console.error('Error fetching products by category:', error);
-      return []; // Return an empty array in case of error
+  try {
+    // First get the category document to get its categoryId
+    const categoryDoc = await databases.getDocument(
+      appwriteConfig.databaseId,
+      appwriteConfig.categoriesCollectionId,
+      categoryId.trim()
+    );
+
+    if (!categoryDoc) {
+      return [];
+    }
+
+    // Then fetch products using the categoryId from the category document
+    const response = await databases.listDocuments(
+      appwriteConfig.databaseId,
+      appwriteConfig.productscollectionId,
+      [Query.equal('categoryId', categoryDoc.categoryId)]
+    );
+
+    return response.documents.map(transformToProduct);
+  } catch (error) {
+    // Silently handle all errors
+    return [];
   }
 }
 
 export async function fetchCategories(): Promise<Category[]> {
   try {
     const response = await databases.listDocuments(
-      appwriteConfig.databaseId, // Database ID
-      appwriteConfig.categoriesCollectionId, // Collection ID for categories
-      [
-        Query.limit(100) // Fetch up to 100 categories (adjust as needed)
-      ]
+      appwriteConfig.databaseId,
+      appwriteConfig.categoriesCollectionId,
+      [Query.limit(100)]
     );
 
-    // Transform the response into the Category type
-    const categories = response.documents.map((doc) => ({
+    return response.documents.map((doc) => ({
       $id: doc.$id,
       name: doc.name,
       imageUrl: doc.imageUrl,
       categoryId: doc.categoryId
     }));
-
-    return categories;
   } catch (error) {
     console.error('Error fetching categories:', error);
-    return []; // Return an empty array in case of error
+    throw new Error('Failed to fetch categories. Please try again later.');
   }
 }
 
-
-
-
 export async function fetchTopCategories(): Promise<Category[]> {
   try {
-    // Fetch top categories
     const topCategoriesResponse = await databases.listDocuments(
       appwriteConfig.databaseId,
-      appwriteConfig.topCategoriesCollectionId, // Add this to appwriteConfig
-      [Query.orderAsc('rank'), Query.limit(10)] // Fetch top 10 categories
+      appwriteConfig.topCategoriesCollectionId,
+      [Query.orderAsc('rank'), Query.limit(10)]
     );
 
-    console.log('Top categories:', topCategoriesResponse);
-    // Fetch category details for each top category
     const categories = await Promise.all(
       topCategoriesResponse.documents.map(async (doc) => {
-       // console.log("this is the category id", doc.categoryDocumentId);
-        const category = await databases.getDocument(
-          appwriteConfig.databaseId,
-          appwriteConfig.categoriesCollectionId,
-          doc.categoryDocumentId
-       
-        );
-        return {
-          $id: category.$id, // Auto-generated by Appwrite
-          name: category.name,
-          imageUrl: category.imageUrl,
-          categoryId: category.categoryId, // Ensure this field exists in your database
-        };
+        if (!isValidId(doc.categoryDocumentId)) {
+          console.warn('Invalid category document ID found:', doc.categoryDocumentId);
+          return null;
+        }
+
+        try {
+          const category = await databases.getDocument(
+            appwriteConfig.databaseId,
+            appwriteConfig.categoriesCollectionId,
+            doc.categoryDocumentId.trim()
+          );
+
+          if (!category) {
+            console.warn('Category not found:', doc.categoryDocumentId);
+            return null;
+          }
+
+          return {
+            $id: category.$id,
+            name: category.name,
+            imageUrl: category.imageUrl,
+            categoryId: category.categoryId,
+          };
+        } catch (error) {
+          if (error instanceof AppwriteException && error.code === 404) {
+            console.warn('Category not found:', doc.categoryDocumentId);
+            return null;
+          }
+          console.error('Error fetching category details:', error);
+          return null;
+        }
       })
     );
 
-    return categories;
+    // Filter out null values and return only valid categories
+    const validCategories = categories.filter((category): category is Category => category !== null);
+    
+    // If no valid categories found, return empty array
+    if (validCategories.length === 0) {
+      console.warn('No valid categories found in top categories');
+      return [];
+    }
+
+    return validCategories;
   } catch (error) {
     console.error('Error fetching top categories:', error);
-    return [];
+    return []; // Return empty array instead of throwing error
   }
 }
 

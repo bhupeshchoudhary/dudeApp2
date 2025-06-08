@@ -1,17 +1,5 @@
-
-
-
-
-
-
-
-
-
-
-
-
 import { appwriteConfig } from "./appwrite";
-import { ID, Query } from "react-native-appwrite";
+import { ID, Query, AppwriteException } from "react-native-appwrite";
 import { databases } from "./appwrite";
 
 interface CartItem {
@@ -21,6 +9,41 @@ interface CartItem {
   imageUrl: string;
   name: string;
 }
+
+// Helper function to validate cart item
+const validateCartItem = (item: CartItem): void => {
+  if (!item.productId || typeof item.productId !== 'string') {
+    throw new Error('Invalid product ID');
+  }
+  if (!item.name || typeof item.name !== 'string') {
+    throw new Error('Invalid product name');
+  }
+  if (typeof item.quantity !== 'number' || item.quantity <= 0) {
+    throw new Error('Invalid quantity');
+  }
+  if (typeof item.price !== 'number' || item.price < 0) {
+    throw new Error('Invalid price');
+  }
+  if (!item.imageUrl || typeof item.imageUrl !== 'string') {
+    throw new Error('Invalid image URL');
+  }
+};
+
+// Helper function to parse cart items
+const parseCartItems = (items: string[]): CartItem[] => {
+  return items
+    .map((item: string) => {
+      try {
+        const parsedItem = JSON.parse(item);
+        validateCartItem(parsedItem);
+        return parsedItem;
+      } catch (e) {
+        console.error('Error parsing cart item:', e);
+        return null;
+      }
+    })
+    .filter((item): item is CartItem => item !== null);
+};
 
 export const addToCart = async (
   userId: string, 
@@ -33,13 +56,17 @@ export const addToCart = async (
   try {
     if (!userId) throw new Error('User ID is required');
 
+    // Validate input
+    const newItem: CartItem = { productId, quantity, price, imageUrl, name };
+    validateCartItem(newItem);
+
     const response = await databases.listDocuments(
       appwriteConfig.databaseId,
       appwriteConfig.cartsCollectionId,
       [Query.equal('userId', userId)]
     );
-// this is important as item in cart is stored as string array so we need to convert it to string
-    const newItem = JSON.stringify({ productId, quantity, price, imageUrl, name });
+
+    const newItemString = JSON.stringify(newItem);
 
     if (response.documents.length > 0) {
       const cart = response.documents[0];
@@ -50,8 +77,13 @@ export const addToCart = async (
       }
 
       const existingItemIndex = items.findIndex((item: string) => {
-        const parsedItem: CartItem = JSON.parse(item);
-        return parsedItem.productId === productId;
+        try {
+          const parsedItem: CartItem = JSON.parse(item);
+          return parsedItem.productId === productId;
+        } catch (e) {
+          console.error('Error parsing cart item:', e);
+          return false;
+        }
       });
 
       if (existingItemIndex !== -1) {
@@ -59,7 +91,7 @@ export const addToCart = async (
         existingItem.quantity += quantity;
         items[existingItemIndex] = JSON.stringify(existingItem);
       } else {
-        items.push(newItem);
+        items.push(newItemString);
       }
 
       return await databases.updateDocument(
@@ -78,7 +110,7 @@ export const addToCart = async (
         ID.unique(),
         {
           userId,
-          items: [newItem],
+          items: [newItemString],
           createdAt: new Date().toISOString(),
           updatedAt: new Date().toISOString()
         }
@@ -86,6 +118,9 @@ export const addToCart = async (
     }
   } catch (error) {
     console.error('Error adding to cart:', error);
+    if (error instanceof AppwriteException) {
+      throw new Error('Failed to update cart. Please try again later.');
+    }
     throw error;
   }
 };
@@ -102,28 +137,16 @@ export const fetchCart = async (userId: string) => {
 
     if (response.documents.length > 0) {
       const cart = response.documents[0];
-      const items = cart.items.map((item: string) => {
-        try {
-          const parsedItem = JSON.parse(item);
-          return {
-            productId: parsedItem.productId,
-            name: parsedItem.name,
-            price: parsedItem.price,
-            quantity: parsedItem.quantity,
-            imageUrl: parsedItem.imageUrl,
-          };
-        } catch (e) {
-          console.error('Error parsing cart item:', e);
-          return null;
-        }
-      }).filter(Boolean); // Remove any null items from parsing errors
-
+      const items = parseCartItems(cart.items || []);
       return { items, updatedAt: cart.updatedAt };
     }
     return { items: [], updatedAt: null };
   } catch (error) {
     console.error('Error fetching cart:', error);
-    return { items: [], updatedAt: null };
+    if (error instanceof AppwriteException) {
+      throw new Error('Failed to fetch cart. Please try again later.');
+    }
+    throw error;
   }
 };
 
@@ -133,6 +156,10 @@ export const updateCart = async (
 ) => {
   try {
     if (!userId) throw new Error('User ID is required');
+    if (!Array.isArray(items)) throw new Error('Invalid items array');
+
+    // Validate all items
+    items.forEach(validateCartItem);
 
     const response = await databases.listDocuments(
       appwriteConfig.databaseId,
@@ -140,10 +167,10 @@ export const updateCart = async (
       [Query.equal('userId', userId)]
     );
 
+    const serializedItems = items.map(item => JSON.stringify(item));
+
     if (response.documents.length > 0) {
       const cartId = response.documents[0].$id;
-      const serializedItems = items.map(item => JSON.stringify(item));
-      
       return await databases.updateDocument(
         appwriteConfig.databaseId,
         appwriteConfig.cartsCollectionId,
@@ -154,14 +181,13 @@ export const updateCart = async (
         }
       );
     } else {
-      // Create new cart if it doesn't exist
       return await databases.createDocument(
         appwriteConfig.databaseId,
         appwriteConfig.cartsCollectionId,
         ID.unique(),
         {
           userId,
-          items: items.map(item => JSON.stringify(item)),
+          items: serializedItems,
           createdAt: new Date().toISOString(),
           updatedAt: new Date().toISOString()
         }
@@ -169,6 +195,9 @@ export const updateCart = async (
     }
   } catch (error) {
     console.error('Error updating cart:', error);
+    if (error instanceof AppwriteException) {
+      throw new Error('Failed to update cart. Please try again later.');
+    }
     throw error;
   }
 };
@@ -185,11 +214,11 @@ export const removeFromCart = async (userId: string, productId: string) => {
 
     if (response.documents.length > 0) {
       const cart = response.documents[0];
+      const items = parseCartItems(cart.items || []);
       
-      const updatedItems = cart.items.filter((item: string) => {
-        const parsedItem: CartItem = JSON.parse(item);
-        return parsedItem.productId !== productId;
-      });
+      const updatedItems = items
+        .filter(item => item.productId !== productId)
+        .map(item => JSON.stringify(item));
 
       return await databases.updateDocument(
         appwriteConfig.databaseId,
@@ -203,6 +232,9 @@ export const removeFromCart = async (userId: string, productId: string) => {
     }
   } catch (error) {
     console.error('Error removing from cart:', error);
+    if (error instanceof AppwriteException) {
+      throw new Error('Failed to remove item from cart. Please try again later.');
+    }
     throw error;
   }
 };
@@ -231,6 +263,9 @@ export const clearCart = async (userId: string) => {
     }
   } catch (error) {
     console.error('Error clearing cart:', error);
+    if (error instanceof AppwriteException) {
+      throw new Error('Failed to clear cart. Please try again later.');
+    }
     throw error;
   }
 };

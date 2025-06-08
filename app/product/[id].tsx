@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState, useMemo } from 'react';
 import { View, ScrollView, Image, ActivityIndicator } from 'react-native';
 import { router, useLocalSearchParams } from 'expo-router';
@@ -11,7 +10,6 @@ import ProductCard from '../../components/customComponents/ProductCard';
 import { addToCart, fetchCart } from '../../lib/handleCart';
 import { useGlobalContext } from '@/context/GlobalProvider';
 import QuantityModal from '@/components/customComponents/cart/CartDialogBox';
-
 
 interface CartItem {
   productId: string;
@@ -29,12 +27,9 @@ const ProductScreen = () => {
   const [error, setError] = useState('');
   const [relatedProducts, setRelatedProducts] = useState<Product[]>([]);
   const [isInCart, setIsInCart] = useState(false);
+  const [isAddingToCart, setIsAddingToCart] = useState(false);
   const { user } = useGlobalContext();
-
   const [isQuantityModalVisible, setIsQuantityModalVisible] = useState(false);
-
-
- 
 
   // Check if product is in cart
   const checkIfInCart = async () => {
@@ -45,16 +40,26 @@ const ProductScreen = () => {
       setIsInCart(isItemInCart);
     } catch (error) {
       console.error('Error checking cart:', error);
+      Toast.show({
+        type: 'error',
+        text1: 'Error',
+        text2: 'Failed to check cart status. Please try again.',
+      });
     }
   };
-
- 
 
   // Fetch product details
   useEffect(() => {
     const loadProduct = async () => {
+      if (!id) {
+        setError('Invalid product ID');
+        setIsProductLoading(false);
+        return;
+      }
+
       try {
         setIsProductLoading(true);
+        setError('');
         const productData = await fetchProductsById(id.toString());
         if (productData) {
           setProduct(productData);
@@ -62,8 +67,8 @@ const ProductScreen = () => {
           setError('Product not found.');
         }
       } catch (error) {
+        console.error('Error fetching product:', error);
         setError('Failed to fetch product details. Please try again.');
-        console.error(error);
       } finally {
         setIsProductLoading(false);
       }
@@ -103,41 +108,53 @@ const ProductScreen = () => {
     loadRelatedProducts();
   }, [product]);
 
-  // Update the function signature to accept quantity
-const handleAddToCart = async (quantity: number = 1) => {
-  if (!user) {
-    Toast.show({
-      type: 'error',
-      text1: 'Error',
-      text2: 'Please log in to add items to your cart.',
-    });
-    return;
-  }
+  const handleAddToCart = async (quantity: number = 1) => {
+    if (!user) {
+      Toast.show({
+        type: 'error',
+        text1: 'Error',
+        text2: 'Please log in to add items to your cart.',
+      });
+      return;
+    }
 
-  try {
-    await addToCart(
-      user.$id, 
-      product!.$id, 
-      quantity,  // Use the quantity parameter here
-      product!.price, 
-      product!.imageUrl, 
-      product!.name
-    );
-    setIsInCart(true);
-    Toast.show({
-      type: 'success',
-      text1: 'Success',
-      text2: 'Product added to cart!',
-    });
-  } catch (error) {
-    console.error('Error adding to cart:', error);
-    Toast.show({
-      type: 'error',
-      text1: 'Error',
-      text2: 'Failed to add product to cart. Please try again.',
-    });
-  }
-};
+    if (!product) {
+      Toast.show({
+        type: 'error',
+        text1: 'Error',
+        text2: 'Product information is missing.',
+      });
+      return;
+    }
+
+    try {
+      setIsAddingToCart(true);
+      await addToCart(
+        user.$id, 
+        product.$id, 
+        quantity,
+        product.price, 
+        product.imageUrl, 
+        product.name
+      );
+      setIsInCart(true);
+      Toast.show({
+        type: 'success',
+        text1: 'Success',
+        text2: 'Product added to cart!',
+      });
+    } catch (error) {
+      console.error('Error adding to cart:', error);
+      Toast.show({
+        type: 'error',
+        text1: 'Error',
+        text2: 'Failed to add product to cart. Please try again.',
+      });
+    } finally {
+      setIsAddingToCart(false);
+      setIsQuantityModalVisible(false);
+    }
+  };
 
   const handleCartAction = () => {
     if (isInCart) {
@@ -156,7 +173,7 @@ const handleAddToCart = async (quantity: number = 1) => {
 
   if (isProductLoading) {
     return (
-      <View className="flex-1 justify-center items-center">
+      <View className="flex-1 justify-center items-center ">
         <ActivityIndicator size="large" color="#000" />
       </View>
     );
@@ -164,16 +181,26 @@ const handleAddToCart = async (quantity: number = 1) => {
 
   if (error) {
     return (
-      <View className="flex-1 justify-center items-center">
-        <Text className="text-red-500">{error}</Text>
+      <View className="flex-1 justify-center items-center p-4">
+        <Text className="text-red-500 text-center" children={error} />
+        <Button
+          onPress={() => router.back()}
+          className="mt-4 bg-blue-500"
+          children={<Text className="text-white" children="Go Back" />}
+        />
       </View>
     );
   }
 
   if (!product) {
     return (
-      <View className="flex-1 justify-center items-center">
-        <Text className="text-red-500">Product not found.</Text>
+      <View className="flex-1 justify-center items-center p-4">
+        <Text className="text-red-500 text-center" children="Product not found." />
+        <Button
+          onPress={() => router.back()}
+          className="mt-4 bg-blue-500"
+          children={<Text className="text-white" children="Go Back" />}
+        />
       </View>
     );
   }
@@ -192,47 +219,45 @@ const handleAddToCart = async (quantity: number = 1) => {
       {/* Product Details */}
       <View className="p-4">
         {/* Product Name */}
-        <Text className="text-2xl font-bold">{product.name}</Text>
+        <Text className="text-2xl font-bold" children={product.name} />
 
         {/* Price and Discount */}
         <View className="flex-row items-center mt-4">
-          <Text className="text-2xl font-bold">₹{product.price}</Text>
+          <Text className="text-2xl font-bold" children={`₹${product.price}`} />
           {product.mrp && (
-            <Text className="text-gray-500 line-through ml-2">₹{product.mrp}</Text>
+            <Text className="text-gray-500 line-through ml-2" children={`₹${product.mrp}`} />
           )}
           {product.discount && (
             <View className="bg-green-100 px-2 py-1 rounded ml-2">
-              <Text className="text-green-700 text-sm">{product.discount}% OFF</Text>
+              <Text className="text-green-700 text-sm" children={`${product.discount}% OFF`} />
             </View>
           )}
         </View>
 
-        {/* display unit */}
-
+        {/* Unit */}
         <View className="mt-2">
-  <Text className="text-green-600">
-    Unit: {product.unit || 'kg'}
-  </Text>
-</View>
+          <Text className="text-green-600" children={`Unit: ${product.unit || 'kg'}`} />
+        </View>
 
         {/* Stock Availability */}
         <View className="mt-4">
-          <Text className="text-gray-600">
-            {product.stock > 0 ? 'In Stock' : 'Out of Stock'}
-          </Text>
+          <Text 
+            className={`${product.stock > 0 ? 'text-green-600' : 'text-red-600'}`}
+            children={product.stock > 0 ? 'In Stock' : 'Out of Stock'}
+          />
         </View>
 
         {/* Product Description */}
         <View className="mt-6">
-          <Text className="font-bold text-lg mb-2">Product Description</Text>
-          <Text className="text-gray-600">{product.description}</Text>
+          <Text className="font-bold text-lg mb-2" children="Product Description" />
+          <Text className="text-gray-600" children={product.description} />
         </View>
 
         {/* Add to Cart/Go to Cart Button */}
         <Button
           onPress={handleCartAction}
           className={`mt-6 ${isInCart ? 'bg-green-500' : 'bg-blue-500'}`}
-          disabled={product.stock <= 0}
+          disabled={product.stock <= 0 || isAddingToCart}
           accessibilityRole="button"
           accessibilityLabel={
             product.stock <= 0 
@@ -241,45 +266,52 @@ const handleAddToCart = async (quantity: number = 1) => {
                 ? 'Go to Cart' 
                 : 'Add to Cart'
           }
-        >
-          {product.stock <= 0 
-            ? 'Out of Stock' 
-            : isInCart 
-              ? 'Go to Cart' 
-              : 'Add to Cart'}
-        </Button>
+          children={
+            <Text className="text-white" children={
+              isAddingToCart 
+                ? 'Adding...' 
+                : product.stock <= 0 
+                  ? 'Out of Stock' 
+                  : isInCart 
+                    ? 'Go to Cart' 
+                    : 'Add to Cart'
+            } />
+          }
+        />
+
+        {/* Related Products */}
+        {memoizedRelatedProducts.length > 0 && (
+          <View className="mt-8">
+            <Text className="text-xl font-bold mb-4" children="Related Products" />
+            {isRelatedLoading ? (
+              <ActivityIndicator size="small" color="#000" />
+            ) : (
+              <ScrollView
+                horizontal
+                showsHorizontalScrollIndicator={false}
+                className="flex-row"
+              >
+                {memoizedRelatedProducts.map((relatedProduct) => (
+                  <View className="mr-4">
+                    <ProductCard
+                      product={relatedProduct}
+                      onPress={() => handleProductPress(relatedProduct.$id)}
+                    />
+                  </View>
+                ))}
+              </ScrollView>
+            )}
+          </View>
+        )}
       </View>
 
-      {/* Related Products */}
-      {memoizedRelatedProducts.length > 0 && (
-        <View className="mt-8 px-4 pb-8">
-          <Text className="text-xl font-bold mb-4">You Might Also Like</Text>
-          <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-            {memoizedRelatedProducts.map((relatedProduct) => (
-              <ProductCard
-                key={relatedProduct.$id}
-                image={{ uri: relatedProduct.imageUrl }}
-                name={relatedProduct.name}
-                price={`₹${relatedProduct.price}`}
-                mrp={relatedProduct.mrp ? `₹${relatedProduct.mrp}` : undefined}
-                discount={relatedProduct.discount ? `${relatedProduct.discount}% OFF` : undefined}
-                onPress={() => handleProductPress(relatedProduct.$id)}
-              />
-            ))}
-          </ScrollView>
-        </View>
-      )}
-
-
-{/* Quantity Modal */}
-<QuantityModal
-  visible={isQuantityModalVisible}
-  onClose={() => setIsQuantityModalVisible(false)}
-  onConfirm={(quantity: number) => handleAddToCart(quantity)}
-  maxQuantity={product.stock}
-/>
-      {/* Toast Component */}
-      <Toast />
+      {/* Quantity Modal */}
+      <QuantityModal
+        visible={isQuantityModalVisible}
+        onClose={() => setIsQuantityModalVisible(false)}
+        onConfirm={handleAddToCart}
+        maxQuantity={product.stock}
+      />
     </ScrollView>
   );
 };
