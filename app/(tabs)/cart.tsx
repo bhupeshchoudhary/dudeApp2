@@ -74,7 +74,7 @@ const QuantityModal: React.FC<QuantityModalProps> = ({ visible, currentQuantity,
             <TouchableOpacity onPress={onClose} className="px-4 py-2">
               <Text className="text-gray-600">Cancel</Text>
             </TouchableOpacity>
-            <TouchableOpacity onPress={handleConfirm} className="bg-blue-500 px-6 py-2 rounded-lg">
+            <TouchableOpacity onPress={handleConfirm} className="bg-green-500 px-6 py-2 rounded-lg">
               <Text className="text-white font-medium">Confirm</Text>
             </TouchableOpacity>
           </View>

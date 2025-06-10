@@ -161,7 +161,8 @@ const Home: React.FC = () => {
             </TouchableOpacity>
           ) : (
             <Ionicons name="mic" size={20} color="gray" />
-          )}
+          )
+          }
         </View>
       </View>
 
