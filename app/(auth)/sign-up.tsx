@@ -9,6 +9,7 @@ import {
   ScrollView,
   ActivityIndicator,
   Image,
+  Linking,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Link, router, Redirect } from 'expo-router';
@@ -288,23 +289,29 @@ const SignUp = () => {
                 6
               )}
 
-              {/* Terms and Conditions */}
-              <View className="flex-row items-center mt-4 mb-6">
-                <TouchableOpacity
-                  onPress={() => setAcceptTerms(!acceptTerms)}
-                  className="mr-2"
-                >
-                  <Ionicons
-                    name={acceptTerms ? 'checkbox' : 'square-outline'}
-                    size={24}
-                    color={acceptTerms ? '#3B82F6' : '#9CA3AF'}
-                  />
-                </TouchableOpacity>
-                <Text className="text-gray-600 flex-1">
-                  I agree to the{' '}
-                  <Text className="text-blue-500">Terms and Conditions</Text>
-                </Text>
-              </View>
+            
+            
+            {/* Terms and Conditions - External Link Version */}
+<View className="flex-row items-center mt-4 mb-6">
+  <TouchableOpacity
+    onPress={() => setAcceptTerms(!acceptTerms)}
+    className="mr-2"
+  >
+    <Ionicons
+      name={acceptTerms ? 'checkbox' : 'square-outline'}
+      size={24}
+      color={acceptTerms ? '#3B82F6' : '#9CA3AF'}
+    />
+  </TouchableOpacity>
+  <Text className="text-gray-600 flex-1">
+    I agree to the{' '}
+    <TouchableOpacity
+      onPress={() => Linking.openURL('https://ratana.digital/terms')}
+    >
+      <Text className="text-blue-500 underline">Terms and Conditions</Text>
+    </TouchableOpacity>
+  </Text>
+</View>
 
               {/* Sign Up Button */}
               <TouchableOpacity

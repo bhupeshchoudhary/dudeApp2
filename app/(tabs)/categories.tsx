@@ -1,85 +1,93 @@
 // app/(tabs)/categories.tsx
-import React, { useEffect, useState } from 'react';
-import { View, ScrollView, TouchableOpacity, Image } from 'react-native';
+import React, { useState, useCallback, useEffect } from 'react';
+import { View, ScrollView, RefreshControl, TouchableOpacity, Image } from 'react-native';
 import { Text } from '../../components/ui/Text';
+import { fetchCategories } from '../../lib/fetchProducts';
+import { Category } from '../../types/categoryTypes';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
-import { fetchCategories } from '../../lib/fetchProducts';
 
-interface Category {
-  $id: string;
-  name: string;
-  imageUrl: string;
-  categoryId: string;
-}
-
-const Categories = () => {
+export default function CategoriesScreen() {
   const [categories, setCategories] = useState<Category[]>([]);
+  const [refreshing, setRefreshing] = useState(false);
   const router = useRouter();
 
-  useEffect(() => {
-    const loadCategories = async () => {
-      try {
-        const data = await fetchCategories();
-        setCategories(data);
-      } catch (error) {
-        console.error('Error loading categories:', error);
-      }
-    };
+  const loadCategories = async () => {
+    try {
+      const result = await fetchCategories();
+      setCategories(result);
+    } catch (error) {
+      console.error('Error fetching categories:', error);
+    }
+  };
 
+  useEffect(() => {
     loadCategories();
   }, []);
 
-  const handleCategoryPress = (categoryId: string) => {
-    router.push(`/category/${categoryId}`);
-  };
+  const onRefresh = useCallback(async () => {
+    setRefreshing(true);
+    try {
+      await loadCategories();
+    } catch (error) {
+      console.error('Error refreshing categories:', error);
+    } finally {
+      setRefreshing(false);
+    }
+  }, []);
+
+  const renderHeader = () => (
+    <View className="p-4 mt-10 border-b border-gray-200 shadow-sm">
+      <View className="flex-row items-center">
+        <TouchableOpacity onPress={() => router.back()}>
+          <Ionicons name="arrow-back" size={24} color="#000" />
+        </TouchableOpacity>
+        <Text className="text-xl font-bold ml-4" children="Categories" />
+      </View>
+    </View>
+  );
 
   return (
     <View className="flex-1 bg-white">
-      {/* Header */}
-      <View className="flex-row items-center mt-10 p-4 border-b border-gray-200">
-        <TouchableOpacity>
-          <Ionicons name="arrow-back" size={24} color="black" />
-        </TouchableOpacity>
-        <Text className="text-lg font-bold ml-4" children="Categories" />
-      </View>
-
-      <ScrollView showsVerticalScrollIndicator={false}>
-        <View className="flex-row flex-wrap mt-2">
-          {categories.map((category) => (
-            <CategoryItem
-              key={category.$id}
-              title={category.name}
-              image={category.imageUrl}
-              onPress={() => handleCategoryPress(category.$id)}
-            />
-          ))}
+      {renderHeader()}
+      <ScrollView 
+        className="flex-1"
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={onRefresh}
+            colors={['#22C55E']}
+            tintColor="#22C55E"
+          />
+        }
+      >
+        <View className="p-4">
+          <View className="flex-row flex-wrap justify-between">
+            {categories.map((category) => (
+              <TouchableOpacity
+                key={category.$id}
+                className="w-[48%] bg-white p-4 rounded-lg shadow-sm mb-4"
+                onPress={() => router.push(`/category/${category.$id}`)}
+              >
+                <View className="aspect-square bg-gray-100 rounded-lg mb-2 items-center justify-center overflow-hidden">
+                  {category.imageUrl ? (
+                    <Image
+                      source={{ uri: category.imageUrl }}
+                      className="w-full h-full"
+                      resizeMode="cover"
+                    />
+                  ) : (
+                    <Ionicons name="grid" size={32} color="#9CA3AF" />
+                  )}
+                </View>
+                <Text className="text-center font-medium" numberOfLines={2}>
+                  {category.name}
+                </Text>
+              </TouchableOpacity>
+            ))}
+          </View>
         </View>
       </ScrollView>
     </View>
   );
-};
-
-interface CategoryItemProps {
-  title: string;
-  image: string;
-  onPress: () => void;
 }
-
-const CategoryItem: React.FC<CategoryItemProps> = ({ title, image, onPress }) => (
-  <TouchableOpacity 
-    className="w-1/3 p-2"
-    onPress={onPress}
-  >
-    <View className="bg-gray-50 rounded-lg p-4 items-center">
-      <Image 
-        source={{ uri: image }} 
-        className="w-16 h-16 rounded-lg"
-        style={{ backgroundColor: '#f3f4f6' }}
-      />
-      <Text className="text-center mt-2 text-sm" numberOfLines={2} children={title} />
-    </View>
-  </TouchableOpacity>
-);
-
-export default Categories;

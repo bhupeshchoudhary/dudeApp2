@@ -1,6 +1,7 @@
 // hooks/useLocation.ts
 import { useState, useEffect } from 'react';
 import * as Location from 'expo-location';
+import { Alert, Platform, Linking } from 'react-native';
 
 export interface DetailedAddress {
   area: string;
@@ -19,6 +20,9 @@ interface LocationState {
   error: string | null;
 }
 
+const RETRY_DELAY = 1000; // 1 second between retries
+const MAX_RETRIES = 10; // Increased max retries
+
 export const useLocation = () => {
   const [state, setState] = useState<LocationState>({
     location: null,
@@ -27,10 +31,51 @@ export const useLocation = () => {
     error: null,
   });
 
-  const getLocation = async () => {
+  const checkLocationServices = async () => {
+    const enabled = await Location.hasServicesEnabledAsync();
+    if (!enabled) {
+      Alert.alert(
+        "Location Services Disabled",
+        "Please enable location services to use this app.",
+        [
+          {
+            text: "Open Settings",
+            onPress: () => {
+              if (Platform.OS === 'ios') {
+                Linking.openURL('app-settings:');
+              } else {
+                Linking.openSettings();
+              }
+            }
+          },
+          {
+            text: "Cancel",
+            style: "cancel"
+          }
+        ]
+      );
+      return false;
+    }
+    return true;
+  };
+
+  const getLocation = async (retryCount = 0) => {
     try {
       setState(prev => ({ ...prev, loading: true, error: null }));
       
+      // Check if location services are enabled
+      const servicesEnabled = await checkLocationServices();
+      if (!servicesEnabled) {
+        setState(prev => ({
+          ...prev,
+          loading: false,
+          error: 'Location services are disabled'
+        }));
+        // Retry after delay even if services are disabled
+        setTimeout(() => getLocation(retryCount + 1), RETRY_DELAY);
+        return;
+      }
+
       const { status } = await Location.requestForegroundPermissionsAsync();
       if (status !== 'granted') {
         setState(prev => ({
@@ -38,12 +83,23 @@ export const useLocation = () => {
           loading: false,
           error: 'Location permission denied'
         }));
+        // Retry after delay even if permission is denied
+        setTimeout(() => getLocation(retryCount + 1), RETRY_DELAY);
         return;
       }
 
-      const location = await Location.getCurrentPositionAsync({
-        accuracy: Location.Accuracy.Balanced,
-      });
+      // Try to get location with high accuracy first
+      let location;
+      try {
+        location = await Location.getCurrentPositionAsync({
+          accuracy: Location.Accuracy.High,
+        });
+      } catch (error) {
+        // If high accuracy fails, try with balanced accuracy
+        location = await Location.getCurrentPositionAsync({
+          accuracy: Location.Accuracy.Balanced,
+        });
+      }
 
       const [addressDetails] = await Location.reverseGeocodeAsync({
         latitude: location.coords.latitude,
@@ -78,20 +134,32 @@ export const useLocation = () => {
       });
 
     } catch (error) {
-      setState(prev => ({
-        ...prev,
-        loading: false,
-        error: error instanceof Error ? error.message : 'Error getting location'
-      }));
+      console.log(`Location fetch attempt ${retryCount + 1} failed:`, error);
+      
+      // Always retry unless we've hit the max retries
+      if (retryCount < MAX_RETRIES) {
+        setTimeout(() => {
+          getLocation(retryCount + 1);
+        }, RETRY_DELAY);
+      } else {
+        setState(prev => ({
+          ...prev,
+          loading: false,
+          error: error instanceof Error ? error.message : 'Error getting location'
+        }));
+        // Even after max retries, try one more time after a longer delay
+        setTimeout(() => getLocation(0), RETRY_DELAY * 5);
+      }
     }
   };
 
+  // Start location fetching immediately
   useEffect(() => {
     getLocation();
   }, []);
 
   return {
     ...state,
-    getLocation,
+    getLocation: () => getLocation(0), // Reset retry count when manually called
   };
 };

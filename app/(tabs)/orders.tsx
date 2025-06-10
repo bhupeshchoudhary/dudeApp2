@@ -1,18 +1,18 @@
-import React, { useState } from 'react';
-import { View, FlatList } from 'react-native';
+import React, { useState, useCallback } from 'react';
+import { View, FlatList, RefreshControl } from 'react-native';
 import { Text } from '../../components/ui/Text';
 import { TouchableOpacity } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { fetchUserOrders } from '../../lib/handleOrder';
 import { useGlobalContext } from '@/context/GlobalProvider';
 import { useFocusEffect } from '@react-navigation/native';
-import { useCallback } from 'react';
 import { Order } from '../../types/OrderTypes';
 
 export default function OrdersScreen() {
   const { user } = useGlobalContext();
   const [orders, setOrders] = useState<Order[]>([]);
   const [isLoading, setIsLoading] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
 
   const fetchUserOrdersInfo = useCallback(async () => {
     if (!user) return;
@@ -27,6 +27,17 @@ export default function OrdersScreen() {
       setIsLoading(false);
     }
   }, [user]);
+
+  const onRefresh = useCallback(async () => {
+    setRefreshing(true);
+    try {
+      await fetchUserOrdersInfo();
+    } catch (error) {
+      console.error('Error refreshing orders:', error);
+    } finally {
+      setRefreshing(false);
+    }
+  }, [fetchUserOrdersInfo]);
 
   useFocusEffect(
     useCallback(() => {
@@ -93,8 +104,16 @@ export default function OrdersScreen() {
           keyExtractor={(item) => item.$id}
           contentContainerClassName="pb-4"
           showsVerticalScrollIndicator={false}
-          onRefresh={fetchUserOrdersInfo}
-          refreshing={isLoading}
+          onRefresh={onRefresh}
+          refreshing={refreshing}
+          refreshControl={
+            <RefreshControl
+              refreshing={refreshing}
+              onRefresh={onRefresh}
+              colors={['#22C55E']}
+              tintColor="#22C55E"
+            />
+          }
         />
       )}
     </View>

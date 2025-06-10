@@ -1,5 +1,15 @@
 import React, { useEffect, useState, useCallback } from 'react';
-import { View, ScrollView, TouchableOpacity, Image, ActivityIndicator } from 'react-native';
+import { 
+  View, 
+  ScrollView, 
+  TouchableOpacity, 
+  Image, 
+  ActivityIndicator, 
+  RefreshControl,
+  TextInput,
+  Alert,
+  Modal
+} from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import Toast from 'react-native-toast-message';
@@ -19,17 +29,98 @@ import { User } from '../../types/userTypes';
 
 interface CartItemCardProps {
   item: CartItem;
-  onUpdateQuantity: (productId: string, quantity: number) => Promise<void>;
+  onUpdateQuantity: (productId: string, quantity: number) => void;
   onRemoveItem: (productId: string) => Promise<void>;
 }
+
+interface QuantityModalProps {
+  visible: boolean;
+  currentQuantity: number;
+  onClose: () => void;
+  onConfirm: (quantity: number) => void;
+}
+
+const QuantityModal: React.FC<QuantityModalProps> = ({ visible, currentQuantity, onClose, onConfirm }) => {
+  const [quantity, setQuantity] = useState(currentQuantity.toString());
+
+  useEffect(() => {
+    setQuantity(currentQuantity.toString());
+  }, [currentQuantity]);
+
+  const handleConfirm = () => {
+    const newQuantity = parseInt(quantity) || 1;
+    if (newQuantity > 0) {
+      onConfirm(newQuantity);
+      onClose();
+    } else {
+      Alert.alert('Invalid Quantity', 'Please enter a valid quantity greater than 0');
+    }
+  };
+
+  return (
+    <Modal visible={visible} transparent animationType="slide">
+      <View className="flex-1 justify-center items-center bg-black/50">
+        <View className="bg-white p-6 rounded-lg mx-4 w-80">
+          <Text className="text-lg font-bold mb-4">Enter Quantity</Text>
+          <TextInput
+            value={quantity}
+            onChangeText={setQuantity}
+            keyboardType="numeric"
+            className="border border-gray-300 rounded-lg p-3 mb-4 text-center text-lg"
+            placeholder="Enter quantity"
+            selectTextOnFocus
+          />
+          <View className="flex-row justify-end gap-3">
+            <TouchableOpacity onPress={onClose} className="px-4 py-2">
+              <Text className="text-gray-600">Cancel</Text>
+            </TouchableOpacity>
+            <TouchableOpacity onPress={handleConfirm} className="bg-blue-500 px-6 py-2 rounded-lg">
+              <Text className="text-white font-medium">Confirm</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </View>
+    </Modal>
+  );
+};
 
 const CartScreen: React.FC = () => {
   const [cartItems, setCartItems] = useState<CartItem[]>([]);
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
+  const [checkoutLoading, setCheckoutLoading] = useState(false);
   const [totalAmount, setTotalAmount] = useState(0);
   const [adjustedTotal, setAdjustedTotal] = useState<number | null>(null);
+  const [quantityModal, setQuantityModal] = useState<{
+    visible: boolean;
+    productId: string;
+    currentQuantity: number;
+  }>({
+    visible: false,
+    productId: '',
+    currentQuantity: 1
+  });
 
   const { user } = useGlobalContext() as { user: User | null };
+
+  const calculateTotals = useCallback(async (items: CartItem[]) => {
+    const total = items.reduce((sum, item) => sum + item.price * item.quantity, 0);
+    setTotalAmount(total);
+    
+    // If user has a delivery address with pincode, calculate adjusted total
+    if (user?.deliveryAddress?.pincode) {
+      try {
+        const multiplier = await fetchPriceMultiplierByPincode(user.deliveryAddress.pincode);
+        const adjusted = calculateAdjustedPrice(total, multiplier);
+        setAdjustedTotal(adjusted);
+      } catch (error) {
+        console.error('Error calculating adjusted price:', error);
+        setAdjustedTotal(null);
+      }
+    } else {
+      setAdjustedTotal(null);
+    }
+  }, [user]);
 
   const loadCartItems = useCallback(async () => {
     if (!user) return;
@@ -38,19 +129,7 @@ const CartScreen: React.FC = () => {
       setLoading(true);
       const items = await fetchCart(user.$id);
       setCartItems(items.items || []);
-      
-      // Calculate total amount
-      const total = items.items.reduce((sum, item) => sum + item.price * item.quantity, 0);
-      setTotalAmount(total);
-      
-      // If user has a delivery address with pincode, calculate adjusted total
-      if (user.deliveryAddress?.pincode) {
-        const multiplier = await fetchPriceMultiplierByPincode(user.deliveryAddress.pincode);
-        const adjusted = calculateAdjustedPrice(total, multiplier);
-        setAdjustedTotal(adjusted);
-      } else {
-        setAdjustedTotal(null);
-      }
+      await calculateTotals(items.items || []);
     } catch (error) {
       console.error('Error loading cart:', error);
       Toast.show({
@@ -61,7 +140,18 @@ const CartScreen: React.FC = () => {
     } finally {
       setLoading(false);
     }
-  }, [user]);
+  }, [user, calculateTotals]);
+
+  const onRefresh = useCallback(async () => {
+    setRefreshing(true);
+    try {
+      await loadCartItems();
+    } catch (error) {
+      console.error('Error refreshing cart:', error);
+    } finally {
+      setRefreshing(false);
+    }
+  }, [loadCartItems]);
 
   // Initial load
   useEffect(() => {
@@ -75,30 +165,49 @@ const CartScreen: React.FC = () => {
     }, [loadCartItems])
   );
 
-  const handleQuantityChange = async (productId: string, newQuantity: number) => {
-    if (!user) return;
-    
-    try {
-      await updateCart(user.$id, cartItems.map(item =>
+  // Optimistic update for quantity changes
+  const handleQuantityChange = useCallback((productId: string, newQuantity: number) => {
+    if (newQuantity <= 0) {
+      handleRemoveItem(productId);
+      return;
+    }
+
+    // Optimistic update
+    setCartItems(prevItems => {
+      const updatedItems = prevItems.map(item =>
         item.productId === productId ? { ...item, quantity: newQuantity } : item
-      ));
-      await loadCartItems(); // Refresh cart data
-    } catch (error) {
-      console.error('Error updating quantity:', error);
-      Toast.show({
-        type: 'error',
-        text1: 'Error',
-        text2: 'Failed to update quantity. Please try again.',
+      );
+      calculateTotals(updatedItems);
+      return updatedItems;
+    });
+
+    // Background update
+    if (user) {
+      updateCart(user.$id, cartItems.map(item =>
+        item.productId === productId ? { ...item, quantity: newQuantity } : item
+      )).catch(error => {
+        console.error('Error updating quantity:', error);
+        // Revert on error
+        loadCartItems();
+        Toast.show({
+          type: 'error',
+          text1: 'Error',
+          text2: 'Failed to update quantity. Please try again.',
+        });
       });
     }
-  };
+  }, [user, cartItems, calculateTotals, loadCartItems]);
 
   const handleRemoveItem = async (productId: string) => {
     if (!user) return;
     
     try {
+      // Optimistic update
+      const updatedItems = cartItems.filter(item => item.productId !== productId);
+      setCartItems(updatedItems);
+      await calculateTotals(updatedItems);
+
       await removeFromCart(user.$id, productId);
-      await loadCartItems(); // Refresh cart data
       Toast.show({
         type: 'success',
         text1: 'Success',
@@ -106,6 +215,8 @@ const CartScreen: React.FC = () => {
       });
     } catch (error) {
       console.error('Error removing item:', error);
+      // Revert on error
+      loadCartItems();
       Toast.show({
         type: 'error',
         text1: 'Error',
@@ -117,75 +228,92 @@ const CartScreen: React.FC = () => {
   const handleClearCart = async () => {
     if (!user) return;
     
-    try {
-      await clearCart(user.$id);
-      await loadCartItems(); // Refresh cart data
-      Toast.show({
-        type: 'success',
-        text1: 'Success',
-        text2: 'Cart cleared successfully!',
-      });
-    } catch (error) {
-      console.error('Error clearing cart:', error);
-      Toast.show({
-        type: 'error',
-        text1: 'Error',
-        text2: 'Failed to clear cart. Please try again.',
-      });
-    }
+    Alert.alert(
+      'Clear Cart',
+      'Are you sure you want to remove all items from your cart?',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Clear',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              await clearCart(user.$id);
+              setCartItems([]);
+              setTotalAmount(0);
+              setAdjustedTotal(null);
+              Toast.show({
+                type: 'success',
+                text1: 'Success',
+                text2: 'Cart cleared successfully!',
+              });
+            } catch (error) {
+              console.error('Error clearing cart:', error);
+              Toast.show({
+                type: 'error',
+                text1: 'Error',
+                text2: 'Failed to clear cart. Please try again.',
+              });
+            }
+          }
+        }
+      ]
+    );
+  };
+
+  const handleQuantityModalConfirm = (quantity: number) => {
+    handleQuantityChange(quantityModal.productId, quantity);
   };
 
   const ProceedToCheckout = async () => {
-    if (loading) return; // Prevent multiple clicks
-    // todo
-    // prentet reload when click on button
-    setLoading(true);
-    // setError(null);
+    if (checkoutLoading) return;
+    
+    setCheckoutLoading(true);
 
     try {
-      // Step 1: Fetch the delivery address
       const deliveryAddress = await fetchUserAddress(user!.$id.toString());
       console.log('Delivery Address:', deliveryAddress);
-      // Step 2: Create the order
+      
       const orderId = await createOrder(user!.$id.toString(), cartItems, totalAmount, deliveryAddress);
 
-
-     
-      // Step 3: Clear the cart
       await clearCart(user!.$id.toString());
-      setCartItems([]);  // Clear cart state
+      setCartItems([]);
+      setTotalAmount(0);
+      setAdjustedTotal(null);
 
-       // Step 4: Show success toast
-       Toast.show({
+      Toast.show({
         type: 'success',
         text1: 'Success',
         text2: `Order placed successfully!`,
       });
 
-      // Optionally, navigate to the order details screen
-      // router.push(`/order/${orderId}`);
       router.push("/orders");
 
     } catch (error) {
-      // Step 5: Show error toast
-      // setError(error instanceof Error ? error.message : 'Failed to place order');
       Toast.show({
         type: 'error',
         text1: 'Error',
         text2: 'Failed to place the order. Please try again.',
       });
     } finally {
-      setLoading(false);
+      setCheckoutLoading(false);
     }
   };
 
   const renderHeader = () => (
-    <View className="p-4 border-b border-gray-200 shadow-sm">
+    <View className="p-4 border-b mt-2 border-gray-200 shadow-sm bg-white">
       <View className="flex-row items-center">
         <TouchableOpacity onPress={() => router.back()}>
           <Ionicons name="arrow-back" size={24} color="#000" />
         </TouchableOpacity>
         <Text className="text-xl font-bold ml-4" children="Shopping Cart" />
+        {cartItems.length > 0 && (
+          <View className="ml-auto">
+            <TouchableOpacity onPress={handleClearCart}>
+              <Text className="text-red-500 text-sm" children="Clear All" />
+            </TouchableOpacity>
+          </View>
+        )}
       </View>
     </View>
   );
@@ -194,7 +322,7 @@ const CartScreen: React.FC = () => {
     return (
       <SafeAreaView className="flex-1 bg-white">
         <View className="flex-1 items-center justify-center">
-          <ActivityIndicator size="large" color="#000" />
+          <ActivityIndicator size="large" color="#3B82F6" />
         </View>
       </SafeAreaView>
     );
@@ -202,60 +330,92 @@ const CartScreen: React.FC = () => {
 
   return (
     <SafeAreaView className="flex-1 bg-white">
-      <LinearGradient colors={['#FFFFFF', '#F3F4F6']} className="flex-1">
+      <LinearGradient colors={['#FFFFFF', '#F8FAFC']} className="flex-1">
         {renderHeader()}
 
-        {cartItems.length === 0 ? (
-          // Empty Cart View
-          <View className="flex-1 items-center justify-center p-4">
-            <Ionicons name="cart-outline" size={80} color="#CBD5E0" />
-            <Text className="text-xl font-bold mt-4 text-gray-700" children="Your cart is empty" />
-            <Text className="text-gray-500 text-center mt-2 mb-6" children="Looks like you haven't added anything to your cart yet" />
-            <Button 
-              onPress={() => router.push('/home')} 
-              className="bg-blue-500 px-8"
-              children={<Text className="text-white" children="Start Shopping" />}
-            />
-          </View>
-        ) : (
-          // Cart Items View
-          <>
-            <ScrollView className="flex-1">
-              {cartItems.map(item => (
-                <CartItemCard
-                  key={item.productId}
-                  item={item}
-                  onUpdateQuantity={handleQuantityChange}
-                  onRemoveItem={handleRemoveItem}
+        <View className="flex-1">
+          <ScrollView 
+            className="flex-1"
+            showsVerticalScrollIndicator={false}
+            refreshControl={
+              <RefreshControl
+                refreshing={refreshing}
+                onRefresh={onRefresh}
+                colors={['#3B82F6']}
+                tintColor="#3B82F6"
+              />
+            }
+            contentContainerStyle={{ paddingBottom: cartItems.length > 0 ? 120 : 20 }}
+          >
+            {cartItems.length === 0 ? (
+              // Empty Cart View
+              <View className="flex-1 items-center justify-center p-4 mt-20">
+                <Ionicons name="cart-outline" size={80} color="#CBD5E0" />
+                <Text className="text-xl font-bold mt-4 text-gray-700" children="Your cart is empty" />
+                <Text className="text-gray-500 text-center mt-2 mb-6" children="Looks like you haven't added anything to your cart yet" />
+                <Button 
+                  onPress={() => router.push('/home')} 
+                  className="bg-blue-500 px-8"
+                  children={<Text className="text-white" children="Start Shopping" />}
                 />
-              ))}
-            </ScrollView>
+              </View>
+            ) : (
+              // Cart Items View
+              <>
+                {cartItems.map(item => (
+                  <CartItemCard
+                    key={item.productId}
+                    item={item}
+                    onUpdateQuantity={handleQuantityChange}
+                    onRemoveItem={handleRemoveItem}
+                    onQuantityPress={(productId, currentQuantity) => {
+                      setQuantityModal({
+                        visible: true,
+                        productId,
+                        currentQuantity
+                      });
+                    }}
+                  />
+                ))}
+              </>
+            )}
+          </ScrollView>
 
-            {/* Bottom Sheet */}
-            <View className="border-t border-gray-200 p-4 bg-white">
-              <View className="flex-row justify-between mb-4">
-                <Text className="text-gray-600" children="Total Amount" />
-                <Text className="font-bold" children={`₹${totalAmount}`} />
+          {/* Fixed Bottom Checkout Section */}
+          {cartItems.length > 0 && (
+            <View className="absolute bottom-0 left-0 right-0 bg-white border-t border-gray-200 p-4 shadow-lg">
+              <View className="flex-row justify-between items-center mb-3">
+                <Text className="text-gray-600 text-base" children="Subtotal" />
+                <Text className="font-bold text-lg" children={`₹${totalAmount.toFixed(2)}`} />
               </View>
               {adjustedTotal !== null && adjustedTotal !== totalAmount && (
-                <View className="flex-row justify-between mb-2">
-                  <Text className="text-gray-600">Adjusted Total</Text>
-                  <Text className="font-medium text-green-600">₹{adjustedTotal}</Text>
+                <View className="flex-row justify-between items-center mb-3">
+                  <Text className="text-gray-600 text-base">Final Total</Text>
+                  <Text className="font-bold text-lg text-green-600">₹{adjustedTotal.toFixed(2)}</Text>
                 </View>
               )}
               <Button
                 onPress={ProceedToCheckout}
-                className="bg-blue-500"
-                disabled={loading}
-                children={<Text className="text-white" children={loading ? 'Processing...' : 'Proceed to Checkout'} />}
-              >
-              </Button>
-              <TouchableOpacity onPress={handleClearCart} className="mt-2">
-                <Text className="text-red-500 text-center" children="Clear Cart" />
-              </TouchableOpacity>
+                className="bg-blue-500 py-4"
+                disabled={checkoutLoading}
+                children={
+                  <View className="flex-row items-center justify-center">
+                    {checkoutLoading && <ActivityIndicator size="small" color="white" className="mr-2" />}
+                    <Text className="text-white font-semibold text-lg" 
+                          children={checkoutLoading ? 'Processing...' : 'Proceed to Checkout'} />
+                  </View>
+                }
+              />
             </View>
-          </>
-        )}
+          )}
+        </View>
+
+        <QuantityModal
+          visible={quantityModal.visible}
+          currentQuantity={quantityModal.currentQuantity}
+          onClose={() => setQuantityModal(prev => ({ ...prev, visible: false }))}
+          onConfirm={handleQuantityModalConfirm}
+        />
 
         <Toast />
       </LinearGradient>
@@ -263,46 +423,66 @@ const CartScreen: React.FC = () => {
   );
 };
 
-const CartItemCard: React.FC<CartItemCardProps> = React.memo(
-  ({ item, onUpdateQuantity, onRemoveItem }) => (
+const CartItemCard: React.FC<CartItemCardProps & { 
+  onQuantityPress: (productId: string, currentQuantity: number) => void 
+}> = React.memo(({ item, onUpdateQuantity, onRemoveItem, onQuantityPress }) => (
+  <View className="mx-4 my-2 bg-white rounded-lg shadow-sm border border-gray-100">
     <TouchableOpacity onPress={() => router.push(`/product/${item.productId}`)}>
-      <View className="p-4 border-b border-gray-200">
+      <View className="p-4">
         <View className="flex-row">
-          <Image source={{ uri: item.imageUrl }} className="w-24 h-24 rounded-lg" />
-          <View className="flex-1 ml-4">
-            <Text className="font-medium text-lg" children={item.name} />
-            <Text className="text-gray-600 mt-1" children={`₹${item.price}`} />
-
-            {/* Quantity Controls */}
-            <View className="flex-row items-center mt-2">
-              <TouchableOpacity
-                onPress={() => onUpdateQuantity(item.productId, Math.max(0, item.quantity - 1))}
-                className="w-8 h-8 bg-gray-100 rounded-full items-center justify-center"
-              >
-                <Ionicons name="remove" size={20} color="black" />
-              </TouchableOpacity>
-              <Text className="mx-4" children={item.quantity} />
-              <TouchableOpacity
-                onPress={() => onUpdateQuantity(item.productId, item.quantity + 1)}
-                className="w-8 h-8 bg-gray-100 rounded-full items-center justify-center"
-              >
-                <Ionicons name="add" size={20} color="black" />
-              </TouchableOpacity>
-            </View>
-
-            {/* Remove Button */}
-            <TouchableOpacity
-              onPress={() => onRemoveItem(item.productId)}
-              className="mt-2"
-            >
-              <Ionicons name="trash" size={20} color="#EF4444" />
-            </TouchableOpacity>
-          </View>
-        </View>
-      </View>
-    </TouchableOpacity>
-  )
-);
-
-export default CartScreen;
-
+          <Image 
+                        source={{ uri: item.imageUrl }} 
+                        className="w-20 h-20 rounded-lg bg-gray-100"
+                        resizeMode="cover"
+                      />
+                      <View className="flex-1 ml-4">
+                        <Text className="font-medium text-base text-gray-900" children={item.name} numberOfLines={2} />
+                        <Text className="text-blue-600 font-semibold mt-1" children={`₹${item.price}`} />
+                        <Text className="text-gray-500 text-sm mt-1" children={`Total: ₹${(item.price * item.quantity).toFixed(2)}`} />
+                      </View>
+                    </View>
+            
+                    {/* Quantity Controls and Remove Button */}
+                    <View className="flex-row items-center justify-between mt-4">
+                      {/* Quantity Controls */}
+                      <View className="flex-row items-center bg-gray-50 rounded-lg p-1">
+                        <TouchableOpacity
+                          onPress={() => onUpdateQuantity(item.productId, Math.max(0, item.quantity - 1))}
+                          className="w-8 h-8 bg-white rounded-md items-center justify-center shadow-sm"
+                          activeOpacity={0.7}
+                        >
+                          <Ionicons name="remove" size={16} color="#374151" />
+                        </TouchableOpacity>
+                        
+                        <TouchableOpacity
+                          onPress={() => onQuantityPress(item.productId, item.quantity)}
+                          className="mx-4 px-2 py-1"
+                          activeOpacity={0.7}
+                        >
+                          <Text className="font-semibold text-base text-gray-900" children={item.quantity.toString()} />
+                        </TouchableOpacity>
+                        
+                        <TouchableOpacity
+                          onPress={() => onUpdateQuantity(item.productId, item.quantity + 1)}
+                          className="w-8 h-8 bg-white rounded-md items-center justify-center shadow-sm"
+                          activeOpacity={0.7}
+                        >
+                          <Ionicons name="add" size={16} color="#374151" />
+                        </TouchableOpacity>
+                      </View>
+            
+                      {/* Remove Button */}
+                      <TouchableOpacity
+                        onPress={() => onRemoveItem(item.productId)}
+                        className="p-2"
+                        activeOpacity={0.7}
+                      >
+                        <Ionicons name="trash-outline" size={20} color="#EF4444" />
+                      </TouchableOpacity>
+                    </View>
+                  </View>
+                </TouchableOpacity>
+              </View>
+            ));
+            
+            export default CartScreen;

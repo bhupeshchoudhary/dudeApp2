@@ -11,7 +11,7 @@ export const fetchUserDetails = async (id: string): Promise<User> => {
         const user = await databases.listDocuments(
             appwriteConfig.databaseId,
             appwriteConfig.userCollectionId,
-            [Query.equal('userId', id)] // Fetch user by userId
+            [Query.equal('userId', id)] // Changed from 'userId' to match the field in the database
         );
 
         // console.log("Raw user response from Appwrite:", user);

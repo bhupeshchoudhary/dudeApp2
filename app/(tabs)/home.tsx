@@ -1,5 +1,5 @@
-import React, { useEffect, useState } from 'react';
-import { View, TextInput, TouchableOpacity, ScrollView } from 'react-native';
+import React, { useEffect, useState, useCallback } from 'react';
+import { View, TextInput, TouchableOpacity, ScrollView, RefreshControl } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { Text } from "@/components/ui/Text";
@@ -17,7 +17,6 @@ import { isPincodeServiceable } from '@/lib/handleLocation';
 
 const Home: React.FC = () => {
   const { location, address, loading, error, getLocation } = useLocation();
-  const [showLocationExpanded, setShowLocationExpanded] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [featuredProducts, setFeaturedProducts] = useState<Product[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -25,24 +24,40 @@ const Home: React.FC = () => {
   const [topCategories, setTopCategories] = useState<Category[]>([]);
   const [isServiceable, setIsServiceable] = useState(true);
   const [checkedServiceability, setCheckedServiceability] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
+
+  const loadData = async () => {
+    try {
+      setIsLoading(true);
+      const [products, categories] = await Promise.all([
+        fetchFeaturedProducts(),
+        fetchTopCategories(),
+      ]);
+      setFeaturedProducts(products);
+      setTopCategories(categories);
+    } catch (error) {
+      setErrorMessage('Failed to fetch data. Please try again.');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const onRefresh = useCallback(async () => {
+    setRefreshing(true);
+    try {
+      // Refresh both location and products
+      await Promise.all([
+        getLocation(),
+        loadData()
+      ]);
+    } catch (error) {
+      console.error('Refresh error:', error);
+    } finally {
+      setRefreshing(false);
+    }
+  }, [getLocation]);
 
   useEffect(() => {
-    const loadData = async () => {
-      try {
-        setIsLoading(true);
-        const [products, categories] = await Promise.all([
-          fetchFeaturedProducts(),
-          fetchTopCategories(),
-        ]);
-        setFeaturedProducts(products);
-        setTopCategories(categories);
-      } catch (error) {
-        setErrorMessage('Failed to fetch data. Please try again.');
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
     loadData();
   }, []);
 
@@ -82,11 +97,7 @@ const Home: React.FC = () => {
   }
 
   const LocationHeader = () => (
-    <TouchableOpacity 
-      className="flex-row items-center pt-4"
-      onPress={() => setShowLocationExpanded(true)}
-      activeOpacity={0.7}
-    >
+    <View className="flex-row items-center pt-4">
       <Ionicons name="location" size={24} color="white" />
       <View className="ml-2 flex-1">
         {loading ? (
@@ -106,8 +117,14 @@ const Home: React.FC = () => {
           </>
         )}
       </View>
-      <Ionicons name="chevron-down" size={20} color="white" />
-    </TouchableOpacity>
+      <TouchableOpacity 
+        onPress={() => getLocation()}
+        className="p-2"
+        hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+      >
+        <Ionicons name="refresh" size={20} color="white" />
+      </TouchableOpacity>
+    </View>
   );
 
   const handleViewAll = (type: string) => {
@@ -148,7 +165,18 @@ const Home: React.FC = () => {
         </View>
       </View>
 
-      <ScrollView className="flex-1" showsVerticalScrollIndicator={false}>
+      <ScrollView 
+        className="flex-1" 
+        showsVerticalScrollIndicator={false}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={onRefresh}
+            colors={['#22C55E']} // Green color to match your theme
+            tintColor="#22C55E"
+          />
+        }
+      >
         {/* Product of the Day */}
         <ProductOfTheDay />
 
@@ -182,19 +210,6 @@ const Home: React.FC = () => {
           </View>
         )}
       </ScrollView>
-
-      <LocationExpandedView
-        visible={showLocationExpanded}
-        onClose={() => setShowLocationExpanded(false)}
-        address={address}
-        loading={loading}
-        error={error}
-        onRefreshLocation={getLocation}
-        coordinates={location?.coords ? {
-          latitude: location.coords.latitude,
-          longitude: location.coords.longitude,
-        } : undefined}
-      />
     </SafeAreaView>
   );
 };

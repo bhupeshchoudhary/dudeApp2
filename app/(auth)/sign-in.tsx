@@ -9,6 +9,7 @@ import {
   ScrollView,
   ActivityIndicator,
   Image,
+  Linking,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Link, router, Redirect } from 'expo-router';
@@ -163,12 +164,14 @@ const SignIn = () => {
                   </View>
                 </View>
 
-                {/* Forgot Password */}
-                <TouchableOpacity className="self-end">
-                  <Text className="text-blue-500 font-medium">
-                    Forgot Password?
-                  </Text>
-                </TouchableOpacity>
+                <TouchableOpacity 
+  className="self-end"
+  onPress={() => Linking.openURL('https://ratana.digital/forgot-password')}
+>
+  <Text className="text-blue-500 font-medium p-4">
+    Forgot Password?
+  </Text>
+</TouchableOpacity>
 
                 {/* Login Button */}
                 <TouchableOpacity
