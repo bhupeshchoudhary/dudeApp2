@@ -21,20 +21,20 @@ export default function PrivacyScreen() {
       enabled: true,
       onToggle: () => toggleOption('location'),
     },
-    {
-      id: 'notifications',
-      title: 'Push Notifications',
-      description: 'Receive updates and offers',
-      enabled: true,
-      onToggle: () => toggleOption('notifications'),
-    },
-    {
-      id: 'analytics',
-      title: 'Analytics',
-      description: 'Help us improve by sharing usage data',
-      enabled: false,
-      onToggle: () => toggleOption('analytics'),
-    },
+    // {
+    //   id: 'notifications',
+    //   title: 'Push Notifications',
+    //   description: 'Receive updates and offers',
+    //   enabled: true,
+    //   onToggle: () => toggleOption('notifications'),
+    // },
+    // {
+    //   id: 'analytics',
+    //   title: 'Analytics',
+    //   description: 'Help us improve by sharing usage data',
+    //   enabled: false,
+    //   onToggle: () => toggleOption('analytics'),
+    // },
   ]);
 
   const toggleOption = (id: string) => {

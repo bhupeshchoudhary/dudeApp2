@@ -10,6 +10,8 @@ import ProductCard from '../../components/customComponents/ProductCard';
 import { addToCart, fetchCart } from '../../lib/handleCart';
 import { useGlobalContext } from '@/context/GlobalProvider';
 import QuantityModal from '@/components/customComponents/cart/CartDialogBox';
+import { fetchPriceMultiplierByPincode, calculateAdjustedPrice } from '../../lib/handleLocation';
+import { User } from '../../types/userTypes';
 
 interface CartItem {
   productId: string;
@@ -28,8 +30,9 @@ const ProductScreen = () => {
   const [relatedProducts, setRelatedProducts] = useState<Product[]>([]);
   const [isInCart, setIsInCart] = useState(false);
   const [isAddingToCart, setIsAddingToCart] = useState(false);
-  const { user } = useGlobalContext();
+  const { user } = useGlobalContext() as { user: User | null };
   const [isQuantityModalVisible, setIsQuantityModalVisible] = useState(false);
+  const [adjustedPrice, setAdjustedPrice] = useState<number | null>(null);
 
   // Check if product is in cart
   const checkIfInCart = async () => {
@@ -60,10 +63,23 @@ const ProductScreen = () => {
       try {
         setIsProductLoading(true);
         setError('');
+        console.log('Attempting to fetch product with ID:', id);
         const productData = await fetchProductsById(id.toString());
+        console.log('Product data received:', productData);
+        
         if (productData) {
           setProduct(productData);
+          
+          // If user has a delivery address with pincode, calculate adjusted price
+          if (productData && user?.deliveryAddress?.pincode) {
+            const multiplier = await fetchPriceMultiplierByPincode(user.deliveryAddress.pincode);
+            const adjusted = calculateAdjustedPrice(productData.price, multiplier);
+            setAdjustedPrice(adjusted);
+          } else {
+            setAdjustedPrice(null);
+          }
         } else {
+          console.log('No product found for ID:', id);
           setError('Product not found.');
         }
       } catch (error) {
@@ -75,7 +91,7 @@ const ProductScreen = () => {
     };
 
     loadProduct();
-  }, [id]);
+  }, [id, user?.deliveryAddress?.pincode]);
 
   // Check cart when product loads or changes
   useEffect(() => {
@@ -133,9 +149,10 @@ const ProductScreen = () => {
         user.$id, 
         product.$id, 
         quantity,
-        product.price, 
+        adjustedPrice || product.price, 
         product.imageUrl, 
-        product.name
+        product.name,
+        user.deliveryAddress?.pincode
       );
       setIsInCart(true);
       Toast.show({
@@ -223,7 +240,7 @@ const ProductScreen = () => {
 
         {/* Price and Discount */}
         <View className="flex-row items-center mt-4">
-          <Text className="text-2xl font-bold" children={`₹${product.price}`} />
+          <Text className="text-2xl font-bold" children={`₹${adjustedPrice || product.price}`} />
           {product.mrp && (
             <Text className="text-gray-500 line-through ml-2" children={`₹${product.mrp}`} />
           )}

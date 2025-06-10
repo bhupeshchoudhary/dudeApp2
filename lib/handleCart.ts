@@ -1,14 +1,7 @@
 import { appwriteConfig } from "./appwrite";
 import { ID, Query, AppwriteException } from "react-native-appwrite";
 import { databases } from "./appwrite";
-
-interface CartItem {
-  productId: string;
-  quantity: number;
-  price: number;
-  imageUrl: string;
-  name: string;
-}
+import { CartItem } from "../types/CartTypes";
 
 // Helper function to validate cart item
 const validateCartItem = (item: CartItem): void => {
@@ -51,13 +44,21 @@ export const addToCart = async (
   quantity: number, 
   price: number,
   imageUrl: string,
-  name: string
+  name: string,
+  pincode?: string
 ) => {
   try {
     if (!userId) throw new Error('User ID is required');
 
     // Validate input
-    const newItem: CartItem = { productId, quantity, price, imageUrl, name };
+    const newItem: CartItem = { 
+      productId, 
+      quantity, 
+      price, 
+      imageUrl, 
+      name,
+      pincodeId: pincode
+    };
     validateCartItem(newItem);
 
     const response = await databases.listDocuments(

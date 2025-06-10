@@ -2,7 +2,8 @@ import React, { useEffect, useState } from 'react';
 import {Text, View, Image, TouchableOpacity} from "react-native";
 import { Product } from "@/types/productTypes";
 import { useGlobalContext } from '@/context/GlobalProvider';
-import { fetchLocationByPincode, calculateAdjustedPrice } from '@/lib/handleLocation';
+import { fetchPriceMultiplierByPincode, calculateAdjustedPrice } from '@/lib/handleLocation';
+import { User } from '@/types/userTypes';
 
 interface ProductCardProps {
   product?: Product;
@@ -27,21 +28,28 @@ const ProductCard: React.FC<ProductCardProps> = ({
   large,
   onPress 
 }) => {
-  const { user } = useGlobalContext();
+  const { user } = useGlobalContext() as { user: User | null };
   const [adjustedPrice, setAdjustedPrice] = useState<number | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     const loadLocationPrice = async () => {
-      if (product && user?.deliveryAddress?.pincode) {
-        try {
-          const location = await fetchLocationByPincode(user.deliveryAddress.pincode);
-          if (location) {
-            const adjusted = calculateAdjustedPrice(product.price, location.priceMultiplier);
-            setAdjustedPrice(adjusted);
-          }
-        } catch (error) {
-          console.error('Error loading location price:', error);
+      setIsLoading(true);
+      try {
+        if (product && user?.deliveryAddress?.pincode) {
+          const priceMultiplier = await fetchPriceMultiplierByPincode(user.deliveryAddress.pincode);
+          console.log('Price Multiplier:', priceMultiplier); // Debug log
+          const adjusted = calculateAdjustedPrice(product.price, priceMultiplier);
+          console.log('Original Price:', product.price, 'Adjusted Price:', adjusted); // Debug log
+          setAdjustedPrice(adjusted);
+        } else {
+          setAdjustedPrice(product?.price || null);
         }
+      } catch (error) {
+        console.error('Error loading location price:', error);
+        setAdjustedPrice(product?.price || null);
+      } finally {
+        setIsLoading(false);
       }
     };
 
@@ -50,7 +58,11 @@ const ProductCard: React.FC<ProductCardProps> = ({
 
   // Use product data if provided, otherwise use individual props
   const displayName = product?.name || name || '';
-  const displayPrice = product ? `₹${adjustedPrice || product.price}` : price || '';
+  const displayPrice = isLoading 
+    ? 'Loading...' 
+    : product 
+      ? `₹${adjustedPrice !== null ? adjustedPrice : product.price}` 
+      : price || '';
   const displayMrp = product?.mrp ? `₹${product.mrp}` : mrp;
   const displayDiscount = product?.discount ? `${product.discount}% OFF` : discount;
   const displayWeight = product?.unit || weight;

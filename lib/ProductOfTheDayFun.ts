@@ -15,36 +15,70 @@ export const fetchProductOfTheDay = async () => {
 
     // Check if documents exist
     if (!productsOfTheDay.documents || productsOfTheDay.documents.length === 0) {
-      throw new Error("No products found in the 'Product of the Day' collection");
+      console.log("No products found in the 'Product of the Day' collection");
+      return []; // Return empty array instead of throwing error
     }
 
-    // Step 2: Extract ProductId from each document
-    const productIds = productsOfTheDay.documents.map((doc) => doc.ProductId);
+    // Step 2: Extract productId from each document (try both field names for compatibility)
+    const productIds = productsOfTheDay.documents.map((doc) => {
+      // Handle both 'ProductId' (capital P) and 'productId' (lowercase p) for compatibility
+      return doc.ProductId || doc.productId;
+    }).filter(id => id); // Filter out undefined values
+
     console.log("Extracted Product IDs:", productIds);
 
-    // Step 3: Fetch details for each product
+    if (productIds.length === 0) {
+      console.log("No valid product IDs found");
+      return [];
+    }
+
+    // Step 3: Fetch details for each product using document ID
     const products = await Promise.all(
       productIds.map(async (productId: string) => {
-        const response = await databases.listDocuments(
-          appwriteConfig.databaseId,
-          appwriteConfig.productscollectionId,
-          [Query.equal("$id", productId.toString())] // Changed back to $id
-        );
+        try {
+          // Use getDocument instead of listDocuments for better performance when fetching by ID
+          const productData = await databases.getDocument(
+            appwriteConfig.databaseId,
+            appwriteConfig.productscollectionId,
+            productId
+          );
 
-        // Check if product details exist
-        if (!response.documents || response.documents.length === 0) {
-          console.warn(`Product with ID ${productId} not found`);
+          // Convert price from cents to rupees and format
+          const priceInRupees = productData.price / 100;
+          const formattedPrice = new Intl.NumberFormat('en-IN', {
+            style: 'currency',
+            currency: 'INR',
+            minimumFractionDigits: 2,
+            maximumFractionDigits: 2,
+          }).format(priceInRupees);
+
+          return {
+            $id: productData.$id,
+            productId: productData.productId, // Product code
+            name: productData.name,
+            description: productData.description,
+            price: priceInRupees, // Store as number for calculations
+            formattedPrice: formattedPrice, // Store formatted string for display
+            mrp: productData.mrp ? productData.mrp / 100 : null, // Convert MRP too
+            formattedMrp: productData.mrp ? new Intl.NumberFormat('en-IN', {
+              style: 'currency',
+              currency: 'INR',
+              minimumFractionDigits: 2,
+              maximumFractionDigits: 2,
+            }).format(productData.mrp / 100) : null,
+            discount: productData.discount, // Discount is already a percentage
+            imageUrl: productData.imageUrl,
+            stock: productData.stock,
+            unit: productData.unit,
+            isFeatured: productData.isFeatured,
+            categoryId: productData.categoryId,
+            createdAt: productData.createdAt,
+            updatedAt: productData.updatedAt,
+          };
+        } catch (error) {
+          console.warn(`Product with ID ${productId} not found:`, error);
           return null;
         }
-
-        // Extract product details
-        const productData = response.documents[0];
-        return {
-          productId: productData.$id,
-          name: productData.name,
-          price: `₹${productData.price}`,
-          imageUrl: productData.imageUrl,
-        };
       })
     );
 

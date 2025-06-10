@@ -18,6 +18,7 @@ const isValidId = (id: string): boolean => {
   return typeof id === 'string' && id.trim().length > 0;
 };
 
+
 // Helper function to transform document to Product
 const transformToProduct = (doc: any): Product => ({
   $collectionId: doc.$collectionId,
@@ -29,12 +30,12 @@ const transformToProduct = (doc: any): Product => ({
   categoryId: doc.categoryId,
   createdAt: doc.createdAt,
   description: doc.description,
-  discount: doc.discount,
+  discount: doc.discount, // Keep discount as is (it's already a percentage)
   imageUrl: doc.imageUrl,
   isFeatured: doc.isFeatured,
-  mrp: doc.mrp,
+  mrp: doc.mrp ? doc.mrp / 100 : null, // Convert from cents to rupees
   name: doc.name,
-  price: doc.price,
+  price: doc.price / 100, // Convert from cents to rupees
   unit: doc.unit,
   productId: doc.productId,
   stock: doc.stock,
@@ -62,6 +63,7 @@ export async function fetchProductsById(id: string): Promise<Product | null> {
   }
 
   try {
+    // First try to find the product by document ID
     const response = await databases.getDocument(
       appwriteConfig.databaseId,
       appwriteConfig.productscollectionId,
@@ -70,11 +72,26 @@ export async function fetchProductsById(id: string): Promise<Product | null> {
 
     return transformToProduct(response);
   } catch (error) {
-    console.error('Error fetching product by ID:', error);
+    // If document ID not found, try to find by productId
     if (error instanceof AppwriteException && error.code === 404) {
-      return null;
+      try {
+        const products = await databases.listDocuments(
+          appwriteConfig.databaseId,
+          appwriteConfig.productscollectionId,
+          [Query.equal('productId', id.trim())]
+        );
+
+        if (products.documents.length > 0) {
+          return transformToProduct(products.documents[0]);
+        }
+      } catch (listError) {
+        console.error('Error fetching product by productId:', listError);
+      }
+    } else {
+      console.error('Unexpected error fetching product:', error);
     }
-    throw new Error('Failed to fetch product details. Please try again later.');
+    
+    return null;
   }
 }
 

@@ -19,29 +19,29 @@ export default function SupportScreen() {
       icon: 'call',
       title: 'Call Us',
       description: 'Talk to our customer support',
-      action: () => Linking.openURL('tel:+1234567890'),
+      action: () => Linking.openURL('tel:+919116045123'),
     },
     {
       id: 'whatsapp',
       icon: 'logo-whatsapp',
       title: 'WhatsApp',
       description: 'Chat with us on WhatsApp',
-      action: () => Linking.openURL('whatsapp://send?phone=1234567890'),
+      action: () => Linking.openURL('whatsapp://send?phone=9116045123'),
     },
     {
       id: 'email',
       icon: 'mail',
       title: 'Email',
       description: 'Send us an email',
-      action: () => Linking.openURL('mailto:support@example.com'),
+      action: () => Linking.openURL('mailto:padmavtimarketing5554@gmail.com'),
     },
-    {
-      id: 'faq',
-      icon: 'help-circle',
-      title: 'FAQs',
-      description: 'Frequently asked questions',
-      action: () => console.log('Navigate to FAQs'),
-    },
+    // {
+    //   id: 'faq',
+    //   icon: 'help-circle',
+    //   title: 'FAQs',
+    //   description: 'Frequently asked questions',
+    //   action: () => console.log('Navigate to FAQs'),
+    // },
   ];
 
   return (

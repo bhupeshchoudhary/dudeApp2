@@ -75,7 +75,7 @@ const ProfileScreen: React.FC = () => {
   const handleShare = async () => {
     try {
       await Share.share({
-        message: 'Check out this amazing app!',
+        message: 'https://play.google.com/store/apps/details?id=com.padmavti.ratana',
       });
     } catch (error) {
       Toast.show({
@@ -107,7 +107,9 @@ const ProfileScreen: React.FC = () => {
             />
           ) : (
             <View className="w-16 h-16 rounded-full bg-blue-200 justify-center items-center">
-              <UserIcon size={32} color="black" />
+              <Text className="text-2xl font-bold text-white">
+                {(userDetails?.name || '').charAt(0).toUpperCase() || ''}
+              </Text>
             </View>
           )}
           <View className="ml-4">
@@ -125,9 +127,9 @@ const ProfileScreen: React.FC = () => {
         <MenuItem icon="share-social-outline" title="Share App" onPress={handleShare} />
         <MenuItem icon="document-text-outline" title="My Orders" onPress={() => router.push('/orders' as any)} />
         {/* <MenuItem icon="wallet-outline" title="My Earnings" onPress={() => router.push('/earnings' as any)} /> */}
-        <MenuItem icon="people-outline" title="My Referral" onPress={() => router.push('/referral' as any)} />
+        {/* <MenuItem icon="people-outline" title="My Referral" onPress={() => router.push('/referral' as any)} /> */}
         <MenuItem icon="headset-outline" title="Customer Support" onPress={() => router.push('/support' as any)} />
-        <MenuItem icon="language-outline" title="Change Language" onPress={() => router.push('/language' as any)} />
+        {/* <MenuItem icon="language-outline" title="Change Language" onPress={() => router.push('/language' as any)} /> */}
         <MenuItem icon="location-outline" title="My Addresses" onPress={() => router.push('/addresses' as any)} />
         <MenuItem icon="document-outline" title="Terms & Conditions" onPress={() => router.push('/terms' as any)} />
         <MenuItem icon="shield-outline" title="Account Privacy" onPress={() => router.push('/privacy' as any)} />

@@ -1,30 +1,52 @@
 import { databases, appwriteConfig } from './appwrite';
 import { ID, Query } from 'react-native-appwrite';
 import { Location } from '../types/locationTypes';
+import { Pincode, PriceMultiplier } from '../types/locationTypes';
 
 // Fetch all locations
 export const fetchLocations = async (): Promise<Location[]> => {
   try {
     const response = await databases.listDocuments(
       appwriteConfig.databaseId,
-      appwriteConfig.locationsCollectionId
+      appwriteConfig.pincodesCollectionId,
+      [Query.equal('isActive', true)]
     );
-    return response.documents as any[];
+    return response.documents.map((doc: Pincode) => ({
+      $id: doc.$id,
+      name: doc.area || '',
+      pincode: doc.pincode || '',
+      priceMultiplier: 1, // Will be fetched separately
+      isServiceable: doc.isActive,
+      createdAt: doc.createdAt,
+      updatedAt: doc.updatedAt
+    }));
   } catch (error) {
     console.error('Error fetching locations:', error);
     throw new Error('Failed to fetch locations');
   }
 };
 
-// Fetch location by pincode (if you still need locations, keep this, but for pincodes use the correct collection)
+// Fetch location by pincode
 export const fetchLocationByPincode = async (pincode: string): Promise<Location | null> => {
   try {
     const response = await databases.listDocuments(
-      appwriteConfig.pincodesCollectionId ? appwriteConfig.databaseId : appwriteConfig.databaseId, // fallback for safety
-      appwriteConfig.pincodesCollectionId || appwriteConfig.locationsCollectionId,
-      [Query.equal('pincode', pincode)]
+      appwriteConfig.databaseId,
+      appwriteConfig.pincodesCollectionId,
+      [Query.equal('pincode', pincode), Query.equal('isActive', true)]
     );
-    return (response.documents[0] as any) || null;
+    
+    if (!response.documents.length) return null;
+    
+    const doc = response.documents[0] as Pincode;
+    return {
+      $id: doc.$id,
+      name: doc.area || '',
+      pincode: doc.pincode || '',
+      priceMultiplier: 1, // Will be fetched separately
+      isServiceable: doc.isActive,
+      createdAt: doc.createdAt,
+      updatedAt: doc.updatedAt
+    };
   } catch (error) {
     console.error('Error fetching location:', error);
     throw new Error('Failed to fetch location');
@@ -39,7 +61,9 @@ export const fetchServiceablePincodes = async (): Promise<string[]> => {
       appwriteConfig.pincodesCollectionId,
       [Query.equal('isActive', true)]
     );
-    return response.documents.map((doc: any) => doc.pincode);
+    return response.documents
+      .map((doc: Pincode) => doc.pincode)
+      .filter((pincode: string) => pincode && pincode.length > 0);
   } catch (error) {
     console.error('Error fetching serviceable pincodes:', error);
     return [];
@@ -55,16 +79,20 @@ export const fetchPriceMultiplierByPincode = async (pincode: string): Promise<nu
       appwriteConfig.pincodesCollectionId,
       [Query.equal('pincode', pincode), Query.equal('isActive', true)]
     );
+    
     if (!pincodeRes.documents.length) return 1;
     const pincodeId = pincodeRes.documents[0].$id;
+    
     // Now, get the price multiplier for this pincodeId
     const multiplierRes = await databases.listDocuments(
       appwriteConfig.databaseId,
       appwriteConfig.priceMultipliersCollectionId,
       [Query.equal('pincodeId', pincodeId), Query.equal('isActive', true)]
     );
+    
     if (!multiplierRes.documents.length) return 1;
-    return multiplierRes.documents[0].multiplierValue;
+    const multiplier = multiplierRes.documents[0] as PriceMultiplier;
+    return multiplier.multiplierValue || 1;
   } catch (error) {
     console.error('Error fetching price multiplier:', error);
     return 1;
@@ -79,8 +107,12 @@ export const calculateAdjustedPrice = (originalPrice: number, priceMultiplier: n
 // Check if pincode is serviceable
 export const isPincodeServiceable = async (pincode: string): Promise<boolean> => {
   try {
-    const pincodes = await fetchServiceablePincodes();
-    return pincodes.includes(pincode);
+    const response = await databases.listDocuments(
+      appwriteConfig.databaseId,
+      appwriteConfig.pincodesCollectionId,
+      [Query.equal('pincode', pincode), Query.equal('isActive', true)]
+    );
+    return response.documents.length > 0;
   } catch (error) {
     console.error('Error checking serviceability:', error);
     return false;
