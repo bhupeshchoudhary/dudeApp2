@@ -306,7 +306,7 @@ const SignUp = () => {
   <Text className="text-gray-600 flex-1">
     I agree to the{' '}
     <TouchableOpacity
-      onPress={() => Linking.openURL('https://ratana.digital/terms')}
+      onPress={() => Linking.openURL('https://ratna.digital/terms')}
     >
       <Text className="text-blue-500 underline">Terms and Conditions</Text>
     </TouchableOpacity>
@@ -316,7 +316,7 @@ const SignUp = () => {
               {/* Sign Up Button */}
               <TouchableOpacity
                 className={`w-full py-4 rounded-xl ${
-                  loading ? 'bg-blue-400' : 'bg-blue-500'
+                  loading ? 'bg-[#EBA05C]' : 'bg-[#E86A2B]'
                 } shadow-lg`}
                 onPress={handleSignup}
                 disabled={loading}
@@ -334,7 +334,7 @@ const SignUp = () => {
               <View className="flex-row justify-center mt-6">
                 <Text className="text-gray-600">Already have an account? </Text>
                 <Link href="/(auth)/sign-in">
-                  <Text className="text-blue-500 font-semibold">Sign In</Text>
+                  <Text className="text-[#E86A2B] font-semibold">Sign In</Text>
                 </Link>
               </View>
             </View>

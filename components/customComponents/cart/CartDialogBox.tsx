@@ -168,7 +168,7 @@ const QuantityModal: React.FC<QuantityModalProps> = ({
             </TouchableOpacity>
             <TouchableOpacity 
               onPress={handleConfirm} 
-              className="bg-blue-500 px-6 py-2 rounded-lg"
+              className="bg-orange-500 px-6 py-2 rounded-lg"
               disabled={availableToAdd <= 0}
             >
               <Text className="text-white font-medium">

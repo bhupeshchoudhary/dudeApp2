@@ -71,7 +71,7 @@ export default function CategoriesScreen() {
   const renderHeader = () => (
     <View className="bg-white">
       <LinearGradient
-        colors={['#22C55E', '#22C55E']}
+        colors={["#F7C873", "#EBA05C", "#E86A2B", "#7C4A1E"]}
         start={{ x: 0, y: 0 }}
         end={{ x: 1, y: 0 }}
         className="px-4 py-6 pt-6"
@@ -174,7 +174,7 @@ export default function CategoriesScreen() {
       {searchQuery && (
         <TouchableOpacity
           onPress={() => setSearchQuery('')}
-          className="mt-4 bg-green-500 px-6 py-2 rounded-full"
+          className="mt-4 bg-[#E86A2B] px-6 py-2 rounded-full"
         >
           <Text className="text-white font-medium">Clear Search</Text>
         </TouchableOpacity>
@@ -204,8 +204,8 @@ export default function CategoriesScreen() {
             <RefreshControl
               refreshing={refreshing}
               onRefresh={onRefresh}
-              colors={['#667eea']}
-              tintColor="#667eea"
+              colors={['#E86A2B']}
+              tintColor="#E86A2B"
             />
           }
           showsVerticalScrollIndicator={false}

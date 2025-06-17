@@ -58,7 +58,7 @@ export default function OrdersScreen() {
         <View className="flex-row items-center">
           <View 
             className={`w-2 h-2 rounded-full mr-2 ${
-              item.status === 'delivered' ? 'bg-green-500' : 
+              item.status === 'delivered' ? 'bg-yellow-500' : 
               item.status === 'pending' ? 'bg-yellow-500' : 
               'bg-blue-500'
             }`} 

@@ -69,7 +69,7 @@ const CategoryScreen = () => {
   return (
     <SafeAreaView className="flex-1 bg-white">
       {/* Header */}
-      <View className="bg-green-500 px-4 py-4">
+      <View className="bg-orange-500 px-4 py-4">
         <Text className="text-white text-2xl font-bold" children={category.name} />
       </View>
 

@@ -75,7 +75,7 @@ const ProfileScreen: React.FC = () => {
   const handleShare = async () => {
     try {
       await Share.share({
-        message: 'https://play.google.com/store/apps/details?id=com.padmavti.ratana',
+        message: 'https://play.google.com/store/apps/details?id=com.sumit9897.dude',
       });
     } catch (error) {
       Toast.show({
@@ -119,6 +119,12 @@ const ProfileScreen: React.FC = () => {
             <Text className="text-gray-600">
               {userDetails?.phone || 'No Phone Number'}
             </Text>
+            {/* Show Ratana Cash balance */}
+            {typeof userDetails?.ratanaCash === 'number' && (
+              <Text className="text-green-700 font-semibold mt-1">
+                You have {userDetails.ratanaCash} Ratana Cash
+              </Text>
+            )}
           </View>
         </View>
       </View>

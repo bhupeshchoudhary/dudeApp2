@@ -21,9 +21,9 @@ export const Button: React.FC<ButtonProps> = ({
 }) => {
   // Determine button styles based on variant
   const buttonVariantClasses = {
-    primary: 'bg-green-500',
-    secondary: 'bg-gray-100',
-    outline: 'border border-green-500',
+    primary: 'bg-[#E86A2B]',
+    secondary: 'bg-[#F7C873]',
+    outline: 'border border-[#E86A2B]',
   };
 
   // Determine button size styles
@@ -36,8 +36,8 @@ export const Button: React.FC<ButtonProps> = ({
   // Determine text styles based on variant
   const textVariantClasses = {
     primary: 'text-white',
-    secondary: 'text-gray-900',
-    outline: 'text-green-500',
+    secondary: 'text-[#7C4A1E]',
+    outline: 'text-[#E86A2B]',
   };
 
   return (

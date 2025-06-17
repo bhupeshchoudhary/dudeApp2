@@ -6,7 +6,7 @@ import { Text } from "@/components/ui/Text";
 import { useLocation } from '../../hooks/useLocation';
 import { LocationExpandedView } from '../../components/LocationExpandedView';
 import { router, useLocalSearchParams } from 'expo-router';
-import { fetchFeaturedProducts, fetchTopCategories } from '../../lib/fetchProducts';
+import { fetchFeaturedProducts, fetchTopCategories, fetchProducts } from '../../lib/fetchProducts';
 import { Product } from '../../types/productTypes';
 import { Category } from '@/types/categoryTypes';
 import ProductOfTheDay from '@/components/customComponents/home/ProdectOfTheDay';
@@ -25,6 +25,9 @@ const Home: React.FC = () => {
   const [isServiceable, setIsServiceable] = useState(true);
   const [checkedServiceability, setCheckedServiceability] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
+  const [allProducts, setAllProducts] = useState<Product[]>([]);
+  const [searching, setSearching] = useState(false);
+  const [searchResults, setSearchResults] = useState<Product[]>([]);
 
   const loadData = async () => {
     try {
@@ -75,6 +78,35 @@ const Home: React.FC = () => {
     };
     checkServiceability();
   }, [address?.postalCode, loading]);
+
+  // Fetch all products for search
+  useEffect(() => {
+    const loadAllProducts = async () => {
+      try {
+        const products = await fetchProducts();
+        setAllProducts(products);
+      } catch (error) {
+        // Ignore for now
+      }
+    };
+    loadAllProducts();
+  }, []);
+
+  // Search logic
+  useEffect(() => {
+    if (searchQuery.trim() === '') {
+      setSearching(false);
+      setSearchResults([]);
+      return;
+    }
+    setSearching(true);
+    const results = allProducts.filter(product =>
+      product.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      product.description?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      product.productId?.toLowerCase().includes(searchQuery.toLowerCase())
+    );
+    setSearchResults(results);
+  }, [searchQuery, allProducts]);
 
   const filteredProducts = featuredProducts.filter((product) =>
     product.name.toLowerCase().includes(searchQuery.toLowerCase())
@@ -142,27 +174,24 @@ const Home: React.FC = () => {
       )}
 
       {/* Header with Location */}
-      <View className="bg-green-500 px-4 pb-4">
+      <View className="bg-[#E86A2B] px-4 pb-4">
         <LocationHeader />
         
         {/* Search Bar */}
-        <View className="flex-row items-center bg-white rounded-full mt-4 px-4 py-2">
-          <Ionicons name="search" size={20} color="gray" />
+        <View className="flex-row items-center bg-[#F7C873] rounded-full mt-4 px-4 py-2">
+          <Ionicons name="search" size={20} color="#7C4A1E" />
           <TextInput
             placeholder="Search products..."
-            className="flex-1 ml-2"
-            placeholderTextColor="gray"
+            className="flex-1 ml-2 text-[#7C4A1E]"
+            placeholderTextColor="#7C4A1E]"
             value={searchQuery}
             onChangeText={setSearchQuery}
           />
           {searchQuery ? (
             <TouchableOpacity onPress={() => setSearchQuery('')}>
-              <Ionicons name="close-circle" size={20} color="gray" />
+              <Ionicons name="close-circle" size={20} color="#7C4A1E" />
             </TouchableOpacity>
-          ) : (
-            <Ionicons name="mic" size={20} color="gray" />
-          )
-          }
+          ) : null}
         </View>
       </View>
 
@@ -173,31 +202,45 @@ const Home: React.FC = () => {
           <RefreshControl
             refreshing={refreshing}
             onRefresh={onRefresh}
-            colors={['#22C55E']} // Green color to match your theme
-            tintColor="#22C55E"
+            colors={['#E86A2B']}
+            tintColor="#E86A2B"
           />
         }
       >
-        {/* Product of the Day */}
-        <ProductOfTheDay />
+        {/* Search Results */}
+        {searching && (
+          <View className="px-4 py-4">
+            <Text className="text-xl font-bold mb-2 text-[#E86A2B]">Search Results</Text>
+            {searchResults.length === 0 ? (
+              <Text className="text-[#7C4A1E]">No products found.</Text>
+            ) : (
+              searchResults.map(product => (
+                <TouchableOpacity key={product.$id} onPress={() => router.push(`/product/${product.$id}`)} className="mb-4 bg-[#F7C873] rounded-lg p-4">
+                  <Text className="font-bold text-lg text-[#E86A2B]">{product.name}</Text>
+                  <Text className="text-[#7C4A1E]">{product.description}</Text>
+                  <Text className="text-[#E86A2B] font-semibold">₹{product.price}</Text>
+                </TouchableOpacity>
+              ))
+            )}
+          </View>
+        )}
 
-        {/* Top Categories - Only show if we have categories */}
-        {topCategories.length > 0 && (
-          <View className="px-4">
-            <View className="flex-row justify-between items-center mb-4">
-              <Text className="text-xl font-bold" children="Top Categories" />
+        {/* Default Home Sections */}
+        {!searching && <ProductOfTheDay />}
+        {!searching && topCategories.length > 0 && (
+          <View className="px-4 bg-[#F7C873] rounded-2xl mt-4 pb-2">
+            <View className="flex-row justify-between items-center mb-4 pt-4">
+              <Text className="text-xl font-bold text-[#E86A2B]" children="Top Categories" />
               <Button
                 onPress={() => handleViewAll('categories')}
                 className="bg-transparent"
-                children={<Text className="text-blue-500" children="View All" />}
+                children={<Text className="text-[#E86A2B]" children="View All" />}
               />
             </View>
             <TopCategories />
           </View>
         )}
-
-        {/* Featured Products - Only show if we have products */}
-        {featuredProducts.length > 0 && (
+        {!searching && featuredProducts.length > 0 && (
           <View className="px-4 mt-6">
             <View className="flex-row justify-between items-center mb-4">
               <Text className="text-xl font-bold" children="Featured Products" />

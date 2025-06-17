@@ -20,7 +20,7 @@ export const Section: React.FC<SectionProps> = ({ title, children, showViewAll, 
           accessibilityRole="button"
           accessibilityLabel={`View all ${title}`}
         >
-          <Text className="text-green-500" children="View All" />
+          <Text className="text-[#E86A2B]" children="View All" />
         </TouchableOpacity>
       )}
     </View>

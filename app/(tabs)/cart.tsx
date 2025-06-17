@@ -22,7 +22,7 @@ import { router } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useFocusEffect } from '@react-navigation/native';
 import { createOrder } from '@/lib/handleOrder';
-import { fetchUserAddress } from '@/lib/handleUser';
+import { fetchUserAddress, updateUserRatanaCash, fetchUserDetails } from '@/lib/handleUser';
 import { fetchPriceMultiplierByPincode, calculateAdjustedPrice } from '../../lib/handleLocation';
 import { CartItem } from '../../types/CartTypes';
 import { User } from '../../types/userTypes';
@@ -74,7 +74,7 @@ const QuantityModal: React.FC<QuantityModalProps> = ({ visible, currentQuantity,
             <TouchableOpacity onPress={onClose} className="px-4 py-2">
               <Text className="text-gray-600">Cancel</Text>
             </TouchableOpacity>
-            <TouchableOpacity onPress={handleConfirm} className="bg-green-500 px-6 py-2 rounded-lg">
+            <TouchableOpacity onPress={handleConfirm} className="bg-orange-500 px-6 py-2 rounded-lg">
               <Text className="text-white font-medium">Confirm</Text>
             </TouchableOpacity>
           </View>
@@ -100,6 +100,11 @@ const CartScreen: React.FC = () => {
     productId: '',
     currentQuantity: 1
   });
+  const [showRatanaCashModal, setShowRatanaCashModal] = useState(false);
+  const [useRatanaCash, setUseRatanaCash] = useState(false);
+  const [ratanaCashToUse, setRatanaCashToUse] = useState(0);
+  const [finalTotal, setFinalTotal] = useState<number | null>(null);
+  const [userDetails, setUserDetails] = useState<User | null>(null);
 
   const { user } = useGlobalContext() as { user: User | null };
 
@@ -265,30 +270,64 @@ const CartScreen: React.FC = () => {
     handleQuantityChange(quantityModal.productId, quantity);
   };
 
-  const ProceedToCheckout = async () => {
-    if (checkoutLoading) return;
-    
-    setCheckoutLoading(true);
+  useEffect(() => {
+    const fetchDetails = async () => {
+      if (user) {
+        const details = await fetchUserDetails(user.$id);
+        setUserDetails(details);
+      }
+    };
+    fetchDetails();
+  }, [user]);
 
+  const handleProceedToCheckout = () => {
+    if (userDetails && typeof userDetails.ratanaCash === 'number' && (userDetails.ratanaCash ?? 0) > 0) {
+      setShowRatanaCashModal(true);
+    } else {
+      ProceedToCheckout();
+    }
+  };
+
+  const confirmRatanaCashUsage = async (useCash: boolean) => {
+    setShowRatanaCashModal(false);
+    setUseRatanaCash(useCash);
+    if (useCash && userDetails) {
+      // Calculate how much Ratana Cash can be used
+      const total = adjustedTotal !== null ? adjustedTotal : totalAmount;
+      const cashToUse = Math.min(userDetails.ratanaCash ?? 0, total);
+      setRatanaCashToUse(cashToUse);
+      setFinalTotal(total - cashToUse);
+      await ProceedToCheckout(true, cashToUse, total - cashToUse);
+    } else {
+      setRatanaCashToUse(0);
+      setFinalTotal(null);
+      await ProceedToCheckout(false, 0, null);
+    }
+  };
+
+  const ProceedToCheckout = async (usingRatanaCash = false, cashUsed = 0, newTotal: number | null = null) => {
+    if (checkoutLoading) return;
+    setCheckoutLoading(true);
     try {
       const deliveryAddress = await fetchUserAddress(user!.$id.toString());
-      console.log('Delivery Address:', deliveryAddress);
-      
-      const orderId = await createOrder(user!.$id.toString(), cartItems, totalAmount, deliveryAddress);
-
+      const orderTotal = newTotal !== null ? newTotal : (adjustedTotal !== null ? adjustedTotal : totalAmount);
+      const orderId = await createOrder(user!.$id.toString(), cartItems, orderTotal, deliveryAddress);
+      // If using Ratana Cash, update the user's balance
+      if (usingRatanaCash && userDetails) {
+        await updateUserRatanaCash(userDetails.userId, (userDetails.ratanaCash ?? 0) - cashUsed);
+      }
       await clearCart(user!.$id.toString());
       setCartItems([]);
       setTotalAmount(0);
       setAdjustedTotal(null);
-
+      setFinalTotal(null);
+      setRatanaCashToUse(0);
       Toast.show({
         type: 'success',
         text1: 'Success',
         text2: `Order placed successfully!`,
       });
-
       router.push("/orders");
-
     } catch (error) {
       Toast.show({
         type: 'error',
@@ -355,7 +394,7 @@ const CartScreen: React.FC = () => {
                 <Text className="text-gray-500 text-center mt-2 mb-6" children="Looks like you haven't added anything to your cart yet" />
                 <Button 
                   onPress={() => router.push('/home')} 
-                  className="bg-blue-500 px-8"
+                  className="bg-orange-500 px-8"
                   children={<Text className="text-white" children="Start Shopping" />}
                 />
               </View>
@@ -394,9 +433,21 @@ const CartScreen: React.FC = () => {
                   <Text className="font-bold text-lg text-green-600">₹{adjustedTotal.toFixed(2)}</Text>
                 </View>
               )}
+              {ratanaCashToUse > 0 && (
+                <View className="flex-row justify-between items-center mb-3">
+                  <Text className="text-gray-600 text-base">Ratana Cash Used</Text>
+                  <Text className="font-bold text-lg text-green-600">-₹{ratanaCashToUse}</Text>
+                </View>
+              )}
+              {finalTotal !== null && (
+                <View className="flex-row justify-between items-center mb-3">
+                  <Text className="text-gray-600 text-base">Total After Ratana Cash</Text>
+                  <Text className="font-bold text-lg text-green-600">₹{finalTotal.toFixed(2)}</Text>
+                </View>
+              )}
               <Button
-                onPress={ProceedToCheckout}
-                className="bg-blue-500 py-4"
+                onPress={handleProceedToCheckout}
+                className="bg-orange-500 py-4"
                 disabled={checkoutLoading}
                 children={
                   <View className="flex-row items-center justify-center">
@@ -416,6 +467,25 @@ const CartScreen: React.FC = () => {
           onClose={() => setQuantityModal(prev => ({ ...prev, visible: false }))}
           onConfirm={handleQuantityModalConfirm}
         />
+
+        {showRatanaCashModal && (
+          <Modal visible transparent animationType="fade">
+            <View className="flex-1 justify-center items-center bg-black/50">
+              <View className="bg-white p-6 rounded-lg mx-4 w-80">
+                <Text className="text-lg font-bold mb-4">Use Ratana Cash?</Text>
+                <Text className="mb-4">You have {userDetails?.ratanaCash ?? 0} Ratana Cash. Do you want to use it for this order?</Text>
+                <View className="flex-row justify-end gap-3">
+                  <TouchableOpacity onPress={() => confirmRatanaCashUsage(false)} className="px-4 py-2">
+                    <Text className="text-gray-600">No</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity onPress={() => confirmRatanaCashUsage(true)} className="bg-orange-500 px-6 py-2 rounded-lg">
+                    <Text className="text-white font-medium">Yes, Use It</Text>
+                  </TouchableOpacity>
+                </View>
+              </View>
+            </View>
+          </Modal>
+        )}
 
         <Toast />
       </LinearGradient>
@@ -481,8 +551,9 @@ const CartItemCard: React.FC<CartItemCardProps & {
                       </TouchableOpacity>
                     </View>
                   </View>
-                </TouchableOpacity>
+                  </TouchableOpacity>
               </View>
-            ));
+            )
+          );
             
-            export default CartScreen;
+export default CartScreen;

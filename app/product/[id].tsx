@@ -454,7 +454,7 @@ const ProductScreen = () => {
         <View className="mt-6 flex-row gap-3">
           <Button
             onPress={handleCartAction}
-            className={`flex-1 ${cartQuantity > 0 ? 'bg-green-500' : 'bg-blue-500'}`}
+            className={`flex-1 ${cartQuantity > 0 ? 'bg-orange-500' : 'bg-orange-500'}`}
             disabled={product.stock <= 0 || isAddingToCart}
             accessibilityRole="button"
             accessibilityLabel={
@@ -494,18 +494,18 @@ const ProductScreen = () => {
 
         {/* Product Info Cards */}
         <View className="mt-6 flex-row flex-wrap gap-3">
-          <View className="bg-blue-50 px-3 py-2 rounded-lg flex-1 min-w-[120px]">
-            <Text className="text-blue-600 font-medium text-sm" children="Unit" />
-            <Text className="text-blue-800 font-semibold" children={product.unit || 'kg'} />
+          <View className="bg-[#F7C873] px-3 py-2 rounded-lg flex-1 min-w-[120px]">
+            <Text className="text-[#E86A2B] font-medium text-sm" children="Unit" />
+            <Text className="text-[#E86A2B] font-semibold" children={product.unit || 'kg'} />
           </View>
-          <View className="bg-green-50 px-3 py-2 rounded-lg flex-1 min-w-[120px]">
-            <Text className="text-green-600 font-medium text-sm" children="Available" />
-            <Text className="text-green-800 font-semibold" children={`${product.stock - cartQuantity} left`} />
+          <View className="bg-[#EBA05C] px-3 py-2 rounded-lg flex-1 min-w-[120px]">
+            <Text className="text-[#7C4A1E] font-medium text-sm" children="Available" />
+            <Text className="text-[#7C4A1E] font-semibold" children={`${product.stock - cartQuantity} left`} />
           </View>
           {cartQuantity > 0 && (
-            <View className="bg-orange-50 px-3 py-2 rounded-lg flex-1 min-w-[120px]">
-              <Text className="text-orange-600 font-medium text-sm" children="In Cart" />
-              <Text className="text-orange-800 font-semibold" children={`${cartQuantity}`} />
+            <View className="bg-[#E86A2B] px-3 py-2 rounded-lg flex-1 min-w-[120px]">
+              <Text className="text-[#F7C873] font-medium text-sm" children="In Cart" />
+              <Text className="text-[#F7C873] font-semibold" children={`${cartQuantity}`} />
             </View>
           )}
         </View>

@@ -27,6 +27,7 @@ export const fetchUserDetails = async (id: string): Promise<User> => {
      
 
         return {
+            ...userData, // Spread all Appwrite document fields
             userId: userData.userId,
             email: userData.email,
             name: userData.name ?? '',
@@ -39,6 +40,7 @@ export const fetchUserDetails = async (id: string): Promise<User> => {
             profileUrl: userData.profileUrl ?? '',
             createdAt: userData.$createdAt,
             updatedAt: userData.$updatedAt,
+            ratanaCash: userData.ratanaCash ?? 0,
         };
     } catch (error) {
         console.error("Error in fetchUserDetails:", error);
@@ -70,6 +72,34 @@ export const fetchUserAddress = async (id: string): Promise<DeliveryAddress> => 
         };
     } catch (error) {
         console.error("Error in fetchUserAddress:", error);
+        throw new Error(error instanceof Error ? error.message : String(error));
+    }
+};
+
+export const updateUserRatanaCash = async (userId: string, newRatanaCash: number) => {
+    try {
+        // Find the user document by userId
+        const userRes = await databases.listDocuments(
+            appwriteConfig.databaseId,
+            appwriteConfig.userCollectionId,
+            [Query.equal('userId', userId)]
+        );
+        if (!userRes.documents || userRes.documents.length === 0) {
+            throw new Error('User not found');
+        }
+        const userDoc = userRes.documents[0];
+        // Update the ratanaCash field
+        await databases.updateDocument(
+            appwriteConfig.databaseId,
+            appwriteConfig.userCollectionId,
+            userDoc.$id,
+            {
+                ratanaCash: newRatanaCash,
+                updatedAt: new Date().toISOString(),
+            }
+        );
+    } catch (error) {
+        console.error('Error updating ratanaCash:', error);
         throw new Error(error instanceof Error ? error.message : String(error));
     }
 };

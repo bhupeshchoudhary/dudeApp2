@@ -71,7 +71,7 @@ export const AddressFormModal: React.FC<AddressFormModalProps> = ({
                   key={type}
                   onPress={() => setFormData({ ...formData, type })}
                   className={`flex-1 p-3 rounded-lg mr-2 ${
-                    formData.type === type ? 'bg-green-500' : 'bg-gray-100'
+                    formData.type === type ? 'bg-orange-500' : 'bg-gray-100'
                   }`}
                 >
                   <Text className={`text-center ${
@@ -171,7 +171,7 @@ export const AddressFormModal: React.FC<AddressFormModalProps> = ({
           </View>
 
           <TouchableOpacity
-            className="bg-green-500 p-4 rounded-lg"
+            className="bg-orange-500 p-4 rounded-lg"
             onPress={onSubmit}
           >
             <Text className="text-white text-center font-semibold">

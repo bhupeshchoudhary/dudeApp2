@@ -62,7 +62,7 @@ export default function PrivacyScreen() {
             <TouchableOpacity
               onPress={option.onToggle}
               className={`w-12 h-6 rounded-full ${
-                option.enabled ? 'bg-green-500' : 'bg-gray-300'
+                option.enabled ? 'bg-[#E86A2B]' : 'bg-[#EBA05C]'
               } justify-center`}
             >
               <View

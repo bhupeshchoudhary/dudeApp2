@@ -206,6 +206,20 @@ export async function fetchTopCategories(): Promise<Category[]> {
   }
 }
 
+export async function fetchProducts(): Promise<Product[]> {
+  try {
+    const response = await databases.listDocuments(
+      appwriteConfig.databaseId,
+      appwriteConfig.productscollectionId,
+      [Query.limit(1000)]
+    );
+    return response.documents.map(transformToProduct);
+  } catch (error) {
+    console.error('Error fetching all products:', error);
+    return [];
+  }
+}
+
 // export async function fetchProductOfTheDay():Promise<Product[]>{
 //   return 
 // }

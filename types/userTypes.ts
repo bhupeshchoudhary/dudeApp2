@@ -15,4 +15,5 @@ export interface User extends Models.Document {
     theme?: 'light' | 'dark';
     notifications?: boolean;
   };
+  ratanaCash?: number;
 }

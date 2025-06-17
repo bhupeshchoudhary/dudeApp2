@@ -184,7 +184,7 @@ export default function AddressesScreen() {
               </View>
 
               <TouchableOpacity
-                className="bg-green-500 mt-4 p-2 rounded-lg flex-row justify-center items-center"
+                className="bg-orange-500 mt-4 p-2 rounded-lg flex-row justify-center items-center"
                 onPress={handleEditAddress}
               >
                 <Ionicons name="pencil" size={20} color="white" />
@@ -248,7 +248,7 @@ export default function AddressesScreen() {
                 <Text className="text-gray-700">Cancel</Text>
               </TouchableOpacity>
               <TouchableOpacity
-                className="bg-green-500 px-4 py-2 rounded-lg"
+                className="bg-orange-500 px-4 py-2 rounded-lg"
                 onPress={handleSubmit}
               >
                 <Text className="text-white">Save</Text>

@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { View, ScrollView, ActivityIndicator, FlatList } from 'react-native';
-import { useLocalSearchParams, router } from 'expo-router';
+import { useLocalSearchParams, router, useNavigation } from 'expo-router';
 import { Text } from '@/components/ui/Text';
 import { Button } from '@/components/ui/Button';
 import { fetchFeaturedProducts, fetchTopCategories } from '@/lib/fetchProducts';
@@ -11,6 +11,7 @@ import { CategoryCard } from '@/components/customComponents/CategoryCard';
 
 const ViewAllScreen = () => {
   const { type } = useLocalSearchParams();
+  const navigation = useNavigation();
   const [items, setItems] = useState<Product[] | Category[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -38,6 +39,12 @@ const ViewAllScreen = () => {
 
     loadItems();
   }, [type]);
+
+  useEffect(() => {
+    // Set the header title based on type
+    const title = type === 'featured' ? 'Featured Products' : type === 'categories' ? 'Top Categories' : 'Products';
+    navigation.setOptions({ title });
+  }, [type, navigation]);
 
   const handleProductPress = (productId: string) => {
     router.push(`/product/${productId}`);
@@ -71,7 +78,9 @@ const ViewAllScreen = () => {
   return (
     <View className="flex-1 bg-white">
       <View className="p-4">
-        <Text className="text-2xl font-bold mb-4" children={type === 'featured' ? 'Featured Products' : 'Top Categories'} />
+        <Text className="text-2xl font-bold mb-4">
+          {type === 'featured' ? 'Featured Products' : type === 'categories' ? 'Top Categories' : 'Products'}
+        </Text>
       </View>
 
       {type === 'featured' ? (

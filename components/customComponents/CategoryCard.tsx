@@ -11,7 +11,7 @@ interface CategoryCardProps {
 
 export const CategoryCard: React.FC<CategoryCardProps> = ({ title, startingPrice, image, onPress }) => (
   <TouchableOpacity 
-    className="w-[48%] bg-yellow-50 rounded-lg p-4 mb-4"
+    className="w-[48%] bg-[#F7C873] rounded-lg p-4 mb-4"
     activeOpacity={0.7}
     onPress={onPress}
     accessibilityRole="button"
@@ -23,9 +23,9 @@ export const CategoryCard: React.FC<CategoryCardProps> = ({ title, startingPrice
       resizeMode="cover"
     />
     <View className="p-2">
-      <Text className="font-bold mt-2" children={title} />
+      <Text className="font-bold mt-2 text-[#7C4A1E]" children={title} />
       {startingPrice && (
-        <Text className="text-gray-500 text-sm" children={`Starting at ${startingPrice}`} />
+        <Text className="text-[#E86A2B] text-sm" children={`Starting at ${startingPrice}`} />
       )}
     </View>
   </TouchableOpacity>

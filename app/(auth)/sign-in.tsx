@@ -166,7 +166,7 @@ const SignIn = () => {
 
                 <TouchableOpacity 
   className="self-end"
-  onPress={() => Linking.openURL('https://ratana.digital/forgot-password')}
+  onPress={() => Linking.openURL('https://ratna.digital/forgot-password')}
 >
   <Text className="text-blue-500 font-medium p-4">
     Forgot Password?
@@ -176,7 +176,7 @@ const SignIn = () => {
                 {/* Login Button */}
                 <TouchableOpacity
                   className={`w-full py-4 rounded-xl ${
-                    loading ? 'bg-blue-400' : 'bg-blue-500'
+                    loading ? 'bg-[#EBA05C]' : 'bg-[#E86A2B]'
                   } shadow-lg`}
                   onPress={handleLogin}
                   disabled={loading}
@@ -194,7 +194,7 @@ const SignIn = () => {
                 <View className="flex-row justify-center mt-4">
                   <Text className="text-gray-600">Don't have an account? </Text>
                   <Link href="/(auth)/sign-up">
-                    <Text className="text-blue-500 font-semibold">Sign Up</Text>
+                    <Text className="text-[#E86A2B] font-semibold">Sign Up</Text>
                   </Link>
                 </View>
               </View>

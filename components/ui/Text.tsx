@@ -10,13 +10,13 @@ interface CustomTextProps extends TextProps {
 
 // Define text styles based on variant
 const textVariants = {
-  default: 'text-gray-900',
-  title: 'text-lg font-bold',
-  subtitle: 'text-sm text-gray-600',
-  caption: 'text-xs text-gray-500',
-  heading1: 'text-2xl font-bold text-gray-900',
-  heading2: 'text-xl font-semibold text-gray-900',
-  body: 'text-base text-gray-700',
+  default: 'text-[#7C4A1E]',
+  title: 'text-2xl font-bold text-[#E86A2B]',
+  subtitle: 'text-lg text-[#EBA05C]',
+  caption: 'text-xs text-[#F7C873]',
+  heading1: 'text-2xl font-bold text-[#E86A2B]',
+  heading2: 'text-xl font-semibold text-[#E86A2B]',
+  body: 'text-base text-[#7C4A1E]',
 };
 
 export const Text: React.FC<CustomTextProps> = ({ 

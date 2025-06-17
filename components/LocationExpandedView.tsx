@@ -84,10 +84,10 @@ export const LocationExpandedView: React.FC<LocationExpandedViewProps> = ({
                     }}
                   >
                     <View className="items-center">
-                      <View className="w-8 h-8 bg-green-500 rounded-full items-center justify-center shadow-sm">
+                      <View className="w-8 h-8 bg-orange-500 rounded-full items-center justify-center shadow-sm">
                         <Ionicons name="location" size={20} color="white" />
                       </View>
-                      <View className="absolute -bottom-3 w-2 h-2 bg-green-500 rotate-45 shadow-sm" />
+                      <View className="absolute -bottom-3 w-2 h-2 bg-orange-500 rotate-45 shadow-sm" />
                     </View>
                   </Marker>
                 </MapView>
@@ -104,7 +104,7 @@ export const LocationExpandedView: React.FC<LocationExpandedViewProps> = ({
                 {/* Location Accuracy Indicator */}
                 {Platform.OS === 'ios' && (
                   <View className="absolute top-4 left-4 bg-white px-3 py-1 rounded-full shadow-sm flex-row items-center">
-                    <View className="w-2 h-2 rounded-full bg-green-500 mr-2" />
+                    <View className="w-2 h-2 rounded-full bg-orange-500 mr-2" />
                     <Text className="text-xs text-gray-600" children="GPS Active" />
                   </View>
                 )}
@@ -170,7 +170,7 @@ export const LocationExpandedView: React.FC<LocationExpandedViewProps> = ({
             {/* Confirm Location Button */}
             <View className="p-4 border-t border-gray-200">
               <TouchableOpacity 
-                className="w-full bg-green-500 py-3 rounded-lg"
+                className="w-full bg-orange-500 py-3 rounded-lg"
                 onPress={() => {
                   // Handle location confirmation
                   onClose();
