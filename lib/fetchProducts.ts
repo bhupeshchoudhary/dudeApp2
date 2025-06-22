@@ -18,7 +18,6 @@ const isValidId = (id: string): boolean => {
   return typeof id === 'string' && id.trim().length > 0;
 };
 
-
 // Helper function to transform document to Product
 const transformToProduct = (doc: any): Product => ({
   $collectionId: doc.$collectionId,
@@ -42,12 +41,189 @@ const transformToProduct = (doc: any): Product => ({
   updatedAt: doc.updatedAt,
 });
 
+// Enhanced function to fetch all products with pagination
+export async function fetchAllProductsWithPagination(limit: number = 100): Promise<Product[]> {
+  try {
+    let allProducts: Product[] = [];
+    let offset = 0;
+    let hasMore = true;
+
+    while (hasMore) {
+      const response = await databases.listDocuments(
+        appwriteConfig.databaseId,
+        appwriteConfig.productscollectionId,
+        [
+          Query.limit(limit),
+          Query.offset(offset),
+          Query.orderDesc('$createdAt') // Order by creation date
+        ]
+      );
+
+      const products = response.documents.map(transformToProduct);
+      allProducts = [...allProducts, ...products];
+
+      // Check if we have more products to fetch
+      if (products.length < limit) {
+        hasMore = false;
+      } else {
+        offset += limit;
+      }
+
+      // Safety check to prevent infinite loops
+      if (offset > 10000) {
+        console.warn('Reached maximum pagination limit, stopping fetch');
+        break;
+      }
+    }
+
+    console.log(`Successfully fetched ${allProducts.length} products`);
+    return allProducts;
+  } catch (error) {
+    console.error('Error fetching all products with pagination:', error);
+    throw new Error('Failed to fetch products. Please try again later.');
+  }
+}
+
+// Function to fetch related products based on the current product's category
+export async function fetchRelatedProducts(currentProductId: string, limit: number = 6): Promise<Product[]> {
+  try {
+    console.log('Fetching related products for product ID:', currentProductId);
+    
+    // Get the current product to ensure we use its actual categoryId
+    const currentProduct = await databases.getDocument(
+      appwriteConfig.databaseId,
+      appwriteConfig.productscollectionId,
+      currentProductId
+    );
+
+    console.log('Current product data:', {
+      id: currentProduct.$id,
+      name: currentProduct.name,
+      categoryId: currentProduct.categoryId
+    });
+
+    const categoryId = currentProduct.categoryId;
+    if (!categoryId) {
+      console.warn('No categoryId found for current product');
+      return [];
+    }
+
+    console.log('Fetching products with categoryId:', categoryId);
+
+    // Fetch other products in the same category, excluding the current product
+    const response = await databases.listDocuments(
+      appwriteConfig.databaseId,
+      appwriteConfig.productscollectionId,
+      [
+        Query.equal('categoryId', categoryId),
+        Query.notEqual('$id', currentProductId),
+        Query.limit(limit),
+        Query.orderDesc('$createdAt')
+      ]
+    );
+
+    const relatedProducts = response.documents.map(transformToProduct);
+    
+    console.log('Related products found:', {
+      count: relatedProducts.length,
+      products: relatedProducts.map(p => ({
+        id: p.$id,
+        name: p.name,
+        categoryId: p.categoryId,
+        price: p.price
+      }))
+    });
+
+    return relatedProducts;
+  } catch (error) {
+    console.error('Error fetching related products:', error);
+    
+    // If the main query fails, try a fallback approach
+    try {
+      console.log('Trying fallback approach for related products...');
+      
+      // Get all products and filter by category manually
+      const allProductsResponse = await databases.listDocuments(
+        appwriteConfig.databaseId,
+        appwriteConfig.productscollectionId,
+        [
+          Query.limit(50),
+          Query.orderDesc('$createdAt')
+        ]
+      );
+      
+      const allProducts = allProductsResponse.documents.map(transformToProduct);
+      
+      // Get current product category
+      const currentProduct = await databases.getDocument(
+        appwriteConfig.databaseId,
+        appwriteConfig.productscollectionId,
+        currentProductId
+      );
+      
+      const categoryId = currentProduct.categoryId;
+      
+      // Filter products by category and exclude current product
+      const filteredProducts = allProducts
+        .filter(product => product.categoryId === categoryId && product.$id !== currentProductId)
+        .slice(0, limit);
+      
+      console.log('Fallback related products found:', filteredProducts.length);
+      return filteredProducts;
+      
+    } catch (fallbackError) {
+      console.error('Fallback approach also failed:', fallbackError);
+      return [];
+    }
+  }
+}
+
+// Function to fetch products by category with pagination
+export async function fetchProductsByCategoryWithPagination(categoryId: string, limit: number = 20): Promise<Product[]> {
+  if (!isValidId(categoryId)) {
+    return [];
+  }
+
+  try {
+    // First get the category document to get its categoryId
+    const categoryDoc = await databases.getDocument(
+      appwriteConfig.databaseId,
+      appwriteConfig.categoriesCollectionId,
+      categoryId.trim()
+    );
+
+    if (!categoryDoc) {
+      return [];
+    }
+
+    // Then fetch products using the categoryId from the category document
+    const response = await databases.listDocuments(
+      appwriteConfig.databaseId,
+      appwriteConfig.productscollectionId,
+      [
+        Query.equal('categoryId', categoryDoc.categoryId),
+        Query.limit(limit),
+        Query.orderDesc('$createdAt')
+      ]
+    );
+
+    return response.documents.map(transformToProduct);
+  } catch (error) {
+    console.error('Error fetching products by category:', error);
+    return [];
+  }
+}
+
 export async function fetchFeaturedProducts(): Promise<Product[]> {
   try {
     const response = await databases.listDocuments(
       appwriteConfig.databaseId,
       appwriteConfig.productscollectionId,
-      [Query.equal('isFeatured', true)]
+      [
+        Query.equal('isFeatured', true),
+        Query.limit(20),
+        Query.orderDesc('$createdAt')
+      ]
     );
 
     return response.documents.map(transformToProduct);
@@ -96,34 +272,7 @@ export async function fetchProductsById(id: string): Promise<Product | null> {
 }
 
 export async function fetchProductsByCategoryId(categoryId: string): Promise<Product[]> {
-  if (!isValidId(categoryId)) {
-    return [];
-  }
-
-  try {
-    // First get the category document to get its categoryId
-    const categoryDoc = await databases.getDocument(
-      appwriteConfig.databaseId,
-      appwriteConfig.categoriesCollectionId,
-      categoryId.trim()
-    );
-
-    if (!categoryDoc) {
-      return [];
-    }
-
-    // Then fetch products using the categoryId from the category document
-    const response = await databases.listDocuments(
-      appwriteConfig.databaseId,
-      appwriteConfig.productscollectionId,
-      [Query.equal('categoryId', categoryDoc.categoryId)]
-    );
-
-    return response.documents.map(transformToProduct);
-  } catch (error) {
-    // Silently handle all errors
-    return [];
-  }
+  return fetchProductsByCategoryWithPagination(categoryId, 50); // Fetch more products for category pages
 }
 
 export async function fetchCategories(): Promise<Category[]> {
@@ -131,7 +280,10 @@ export async function fetchCategories(): Promise<Category[]> {
     const response = await databases.listDocuments(
       appwriteConfig.databaseId,
       appwriteConfig.categoriesCollectionId,
-      [Query.limit(100)]
+      [
+        Query.limit(100),
+        Query.orderAsc('name')
+      ]
     );
 
     return response.documents.map((doc) => ({
@@ -206,16 +358,33 @@ export async function fetchTopCategories(): Promise<Category[]> {
   }
 }
 
+// Enhanced function to fetch all products (backward compatibility)
 export async function fetchProducts(): Promise<Product[]> {
+  try {
+    // Use pagination to fetch all products
+    return await fetchAllProductsWithPagination(100);
+  } catch (error) {
+    console.error('Error fetching all products:', error);
+    return [];
+  }
+}
+
+// Function to search products
+export async function searchProducts(query: string, limit: number = 50): Promise<Product[]> {
   try {
     const response = await databases.listDocuments(
       appwriteConfig.databaseId,
       appwriteConfig.productscollectionId,
-      [Query.limit(1000)]
+      [
+        Query.search('name', query),
+        Query.limit(limit),
+        Query.orderDesc('$createdAt')
+      ]
     );
+
     return response.documents.map(transformToProduct);
   } catch (error) {
-    console.error('Error fetching all products:', error);
+    console.error('Error searching products:', error);
     return [];
   }
 }
@@ -223,3 +392,52 @@ export async function fetchProducts(): Promise<Product[]> {
 // export async function fetchProductOfTheDay():Promise<Product[]>{
 //   return 
 // }
+
+// Test function to debug related products issue
+export async function testRelatedProductsFunctionality(): Promise<void> {
+  try {
+    console.log('=== Testing Related Products Functionality ===');
+    
+    // First, let's get all products to see what we have
+    const allProducts = await fetchAllProductsWithPagination(10);
+    console.log('Sample products:', allProducts.map(p => ({
+      id: p.$id,
+      name: p.name,
+      categoryId: p.categoryId
+    })));
+    
+    if (allProducts.length === 0) {
+      console.log('No products found in database');
+      return;
+    }
+    
+    // Test with the first product
+    const testProduct = allProducts[0];
+    console.log('Testing with product:', {
+      id: testProduct.$id,
+      name: testProduct.name,
+      categoryId: testProduct.categoryId
+    });
+    
+    // Test related products function
+    const relatedProducts = await fetchRelatedProducts(
+      testProduct.$id,
+      6
+    );
+    
+    console.log('Related products found:', relatedProducts.length);
+    console.log('Related products:', relatedProducts.map(p => ({
+      id: p.$id,
+      name: p.name,
+      categoryId: p.categoryId
+    })));
+    
+    // Test featured products as well
+    const featuredProducts = await fetchFeaturedProducts();
+    console.log('Featured products found:', featuredProducts.length);
+    
+    console.log('=== End Test ===');
+  } catch (error) {
+    console.error('Test failed:', error);
+  }
+}

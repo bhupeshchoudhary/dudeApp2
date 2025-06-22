@@ -18,6 +18,7 @@ const FeaturedProducts = () => {
         setError('');
         const data = await fetchFeaturedProducts();
         setProducts(data);
+        console.log(`Loaded ${data.length} featured products`);
       } catch (err) {
         setError('Failed to load products');
         console.error('Error loading products:', err);
@@ -31,28 +32,34 @@ const FeaturedProducts = () => {
 
   if (loading) {
     return (
-      <View className="py-4">
-        <ActivityIndicator size="large" color="#0000ff" />
+      <View className="py-6 items-center">
+        <ActivityIndicator size="large" color="#E86A2B" />
+        <Text className="text-orange-600 mt-2" children="Loading featured products..." />
       </View>
     );
   }
 
   if (error) {
     return (
-      <View className="py-4">
-        <Text className="text-red-500" children={error} />
+      <View className="py-4 items-center">
+        <Text className="text-red-500 text-center" children={error} />
       </View>
     );
   }
 
   if (products.length === 0) {
-    return null;
+    return (
+      <View className="py-8 items-center">
+        <Text className="text-gray-500 text-center" children="No featured products available" />
+      </View>
+    );
   }
 
   return (
     <ScrollView
       horizontal
       showsHorizontalScrollIndicator={false}
+      contentContainerStyle={{ paddingRight: 16 }}
       className="py-2"
     >
       {products.map((product) => (
@@ -60,6 +67,7 @@ const FeaturedProducts = () => {
           key={product.$id}
           product={product}
           onPress={() => router.push(`/product/${product.$id}`)}
+          large={true}
         />
       ))}
     </ScrollView>

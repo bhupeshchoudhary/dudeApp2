@@ -14,9 +14,14 @@ import TopCategories from '../../components/customComponents/home/TopCategories'
 import FeaturedProducts from '../../components/customComponents/home/FeaturedProducts';
 import { Button } from '@/components/ui/Button';
 import { isPincodeServiceable } from '@/lib/handleLocation';
+import { useGlobalContext } from '../../context/GlobalProvider';
+import { fetchUserDetails } from '../../lib/handleUser';
+import { User } from '../../types/userTypes';
+import NotificationBell from '../../components/NotificationBell';
 
 const Home: React.FC = () => {
   const { location, address, loading, error, getLocation } = useLocation();
+  const { user } = useGlobalContext() as { user: User | null };
   const [searchQuery, setSearchQuery] = useState('');
   const [featuredProducts, setFeaturedProducts] = useState<Product[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -28,6 +33,7 @@ const Home: React.FC = () => {
   const [allProducts, setAllProducts] = useState<Product[]>([]);
   const [searching, setSearching] = useState(false);
   const [searchResults, setSearchResults] = useState<Product[]>([]);
+  const [userDetails, setUserDetails] = useState<User | null>(null);
 
   const loadData = async () => {
     try {
@@ -44,6 +50,20 @@ const Home: React.FC = () => {
       setIsLoading(false);
     }
   };
+
+  // Load user details for Ratana Cash
+  useEffect(() => {
+    const loadUserDetails = async () => {
+      if (!user?.$id) return;
+      try {
+        const details = await fetchUserDetails(user.$id.toString());
+        setUserDetails(details);
+      } catch (error) {
+        console.log("Error loading user details:", error);
+      }
+    };
+    loadUserDetails();
+  }, [user]);
 
   const onRefresh = useCallback(async () => {
     setRefreshing(true);
@@ -149,9 +169,20 @@ const Home: React.FC = () => {
           </>
         )}
       </View>
+      {/* Ratana Cash Display */}
+      <View className="bg-white/20 rounded-full px-3 py-1 mr-2">
+        <Text className="text-white text-sm font-semibold">
+          ₹{userDetails?.ratanaCash || 0}
+        </Text>
+        <Text className="text-white text-xs text-center">
+          Ratana Cash
+        </Text>
+      </View>
+      {/* Notification Bell */}
+      <NotificationBell size={24} color="#ffffff" showBadge={true} />
       <TouchableOpacity 
         onPress={() => getLocation()}
-        className="p-2"
+        className="p-2 ml-2"
         hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
       >
         <Ionicons name="refresh" size={20} color="white" />

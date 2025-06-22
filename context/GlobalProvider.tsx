@@ -2,6 +2,7 @@ import React, { createContext, useContext, useEffect, useState, Context } from "
 import { getCurrentUser } from "../lib/handleAuth";
 import { Models } from "react-native-appwrite";
 import Toast from 'react-native-toast-message'; // Step 1: Import Toast
+import { NotificationProvider } from './NotificationProvider';
 
 // Define the context value type
 interface GlobalContextType {
@@ -63,11 +64,13 @@ const GlobalProvider: React.FC<GlobalProviderProps> = ({ children }) => {
 
   return (
     <GlobalContext.Provider value={value}>
-      {/* Step 2: Render children (all components wrapped by GlobalProvider) */}
-      {children}
+      <NotificationProvider>
+        {/* Step 2: Render children (all components wrapped by GlobalProvider) */}
+        {children}
 
-      {/* Step 3: Add the Toast component here */}
-      <Toast />
+        {/* Step 3: Add the Toast component here */}
+        <Toast />
+      </NotificationProvider>
     </GlobalContext.Provider>
   );
 };

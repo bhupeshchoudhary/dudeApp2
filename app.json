@@ -2,7 +2,7 @@
   "expo": {
     "name": "Ratana - Retailer Order App",
     "slug": "ratana-retailer",
-    "version": "1.0.5",
+    "version": "1.0.6",
     "orientation": "portrait",
     "icon": "./assets/images/ratana.png",
     "userInterfaceStyle": "light",
@@ -14,20 +14,20 @@
     "assetBundlePatterns": [
       "**/*"
     ],
-    "ios": {
-      "supportsTablet": true,
-      "bundleIdentifier": "com.sumit9897.dude"
-    },
     "android": {
       "adaptiveIcon": {
         "foregroundImage": "./assets/images/ratana.png",
         "backgroundColor": "#ffffff"
       },
       "package": "com.sumit9897.dude",
-      "versionCode": 16,
+      "versionCode": 17,
+      "googleServicesFile": "./google-services.json",
       "permissions": [
         "android.permission.ACCESS_COARSE_LOCATION",
-        "android.permission.ACCESS_FINE_LOCATION"
+        "android.permission.ACCESS_FINE_LOCATION",
+        "android.permission.RECEIVE_BOOT_COMPLETED",
+        "android.permission.VIBRATE",
+        "android.permission.WAKE_LOCK"
       ],
       "buildType": "app-bundle"
     },
@@ -37,7 +37,14 @@
     "plugins": [
       "expo-router",
       "expo-location",
-      "expo-font"
+      "expo-font",
+      [
+        "expo-notifications",
+        {
+          "icon": "./assets/images/ratana.png",
+          "color": "#ffffff"
+        }
+      ]
     ],
     "scheme": "myapp",
     "extra": {

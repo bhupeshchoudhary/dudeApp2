@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "593348969093",
+    "project_id": "dude-bfb28",
+    "storage_bucket": "dude-bfb28.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:593348969093:android:9e41d34a0466893ee69fec",
+        "android_client_info": {
+          "package_name": "com.sumit9897.dude"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAZc8eCE24UWtg0Lb71QoLGFrXl9K_QmC0"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

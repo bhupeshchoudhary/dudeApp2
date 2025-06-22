@@ -134,6 +134,7 @@ const ProfileScreen: React.FC = () => {
         <MenuItem icon="document-text-outline" title="My Orders" onPress={() => router.push('/orders' as any)} />
         {/* <MenuItem icon="wallet-outline" title="My Earnings" onPress={() => router.push('/earnings' as any)} /> */}
         {/* <MenuItem icon="people-outline" title="My Referral" onPress={() => router.push('/referral' as any)} /> */}
+        <MenuItem icon="notifications-outline" title="Notification Settings" onPress={() => router.push('/notification-settings' as any)} />
         <MenuItem icon="headset-outline" title="Customer Support" onPress={() => router.push('/support' as any)} />
         {/* <MenuItem icon="language-outline" title="Change Language" onPress={() => router.push('/language' as any)} /> */}
         <MenuItem icon="location-outline" title="My Addresses" onPress={() => router.push('/addresses' as any)} />

@@ -15,8 +15,55 @@ export const fetchProductOfTheDay = async () => {
 
     // Check if documents exist
     if (!productsOfTheDay.documents || productsOfTheDay.documents.length === 0) {
-      console.log("No products found in the 'Product of the Day' collection");
-      return []; // Return empty array instead of throwing error
+      console.log("No products found in the 'Product of the Day' collection, fetching featured products as fallback");
+      
+      // Fallback: Fetch featured products instead
+      const featuredProducts = await databases.listDocuments(
+        appwriteConfig.databaseId,
+        appwriteConfig.productscollectionId,
+        [
+          Query.equal('isFeatured', true),
+          Query.limit(5),
+          Query.orderDesc('$createdAt')
+        ]
+      );
+
+      if (featuredProducts.documents.length > 0) {
+        console.log("Using featured products as fallback:", featuredProducts.documents.length);
+        return featuredProducts.documents.map((productData) => {
+          const priceInRupees = productData.price / 100;
+          return {
+            $id: productData.$id,
+            productId: productData.productId,
+            name: productData.name,
+            description: productData.description,
+            price: priceInRupees,
+            formattedPrice: new Intl.NumberFormat('en-IN', {
+              style: 'currency',
+              currency: 'INR',
+              minimumFractionDigits: 2,
+              maximumFractionDigits: 2,
+            }).format(priceInRupees),
+            mrp: productData.mrp ? productData.mrp / 100 : null,
+            formattedMrp: productData.mrp ? new Intl.NumberFormat('en-IN', {
+              style: 'currency',
+              currency: 'INR',
+              minimumFractionDigits: 2,
+              maximumFractionDigits: 2,
+            }).format(productData.mrp / 100) : null,
+            discount: productData.discount,
+            imageUrl: productData.imageUrl,
+            stock: productData.stock,
+            unit: productData.unit,
+            isFeatured: productData.isFeatured,
+            categoryId: productData.categoryId,
+            createdAt: productData.createdAt,
+            updatedAt: productData.updatedAt,
+          };
+        });
+      }
+      
+      return []; // Return empty array if no featured products either
     }
 
     // Step 2: Extract productId from each document (try both field names for compatibility)

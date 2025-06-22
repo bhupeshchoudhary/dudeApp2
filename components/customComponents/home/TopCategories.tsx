@@ -31,16 +31,17 @@ const TopCategories = () => {
 
   if (loading) {
     return (
-      <View className="py-4">
-        <ActivityIndicator size="large" color="#0000ff" />
+      <View className="py-6 items-center">
+        <ActivityIndicator size="large" color="#E86A2B" />
+        <Text className="text-orange-600 mt-2" children="Loading categories..." />
       </View>
     );
   }
 
   if (error) {
     return (
-      <View className="py-4">
-        <Text className="text-red-500" children={error} />
+      <View className="py-4 items-center">
+        <Text className="text-red-500 text-center" children={error} />
       </View>
     );
   }
@@ -50,20 +51,24 @@ const TopCategories = () => {
   }
 
   return (
-    <ScrollView
-      horizontal
-      showsHorizontalScrollIndicator={false}
-      className="py-2"
-    >
-      {categories.map((category) => (
-        <CategoryCard
-          key={category.$id}
-          title={category.name}
-          image={{ uri: category.imageUrl }}
-          onPress={() => router.push(`/category/${category.$id}`)}
-        />
-      ))}
-    </ScrollView>
+    <View className="py-2">
+      <ScrollView
+        horizontal
+        showsHorizontalScrollIndicator={false}
+        contentContainerStyle={{ paddingHorizontal: 4 }}
+        className="py-2"
+      >
+        {categories.map((category, index) => (
+          <View key={category.$id} className="mr-4">
+            <CategoryCard
+              title={category.name}
+              image={{ uri: category.imageUrl }}
+              onPress={() => router.push(`/category/${category.$id}`)}
+            />
+          </View>
+        ))}
+      </ScrollView>
+    </View>
   );
 };
 

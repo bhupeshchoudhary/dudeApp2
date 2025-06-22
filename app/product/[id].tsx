@@ -4,7 +4,7 @@ import { router, useLocalSearchParams } from 'expo-router';
 import Toast from 'react-native-toast-message';
 import { Text } from '../../components/ui/Text';
 import { Button } from '../../components/ui/Button';
-import { fetchProductsById, fetchProductsByCategoryId } from '../../lib/fetchProducts';
+import { fetchProductsById, fetchRelatedProducts, testRelatedProductsFunctionality, fetchFeaturedProducts } from '../../lib/fetchProducts';
 import { Product } from '../../types/productTypes';
 import ProductCard from '../../components/customComponents/ProductCard';
 import { addToCart, fetchCart, updateCart } from '../../lib/handleCart';
@@ -121,24 +121,27 @@ const ProductScreen = () => {
     }
   };
 
-  // Fetch product details
+  // Load product data
   useEffect(() => {
     const loadProduct = async () => {
-      if (!id) {
-        setError('Invalid product ID');
-        setIsProductLoading(false);
-        return;
-      }
+      if (!id) return;
 
       try {
         setIsProductLoading(true);
         setError('');
-        console.log('Attempting to fetch product with ID:', id);
+        
         const productData = await fetchProductsById(id.toString());
-        console.log('Product data received:', productData);
         
         if (productData) {
           setProduct(productData);
+          console.log('Product loaded:', {
+            id: productData.$id,
+            name: productData.name,
+            categoryId: productData.categoryId
+          });
+          
+          // Run test function to debug related products
+          await testRelatedProductsFunctionality();
           
           // If user has a delivery address with pincode, calculate adjusted price
           if (productData && user?.deliveryAddress?.pincode) {
@@ -149,12 +152,11 @@ const ProductScreen = () => {
             setAdjustedPrice(null);
           }
         } else {
-          console.log('No product found for ID:', id);
           setError('Product not found.');
         }
-      } catch (error) {
-        console.error('Error fetching product:', error);
-        setError('Failed to fetch product details. Please try again.');
+      } catch (err) {
+        console.error('Error loading product:', err);
+        setError('Failed to load product. Please try again.');
       } finally {
         setIsProductLoading(false);
       }
@@ -175,17 +177,70 @@ const ProductScreen = () => {
 
       try {
         setIsRelatedLoading(true);
-        const products = await fetchProductsByCategoryId(product.categoryId);
-        // Filter out the current product from related products
-        const filteredProducts = products.filter(p => p.$id !== product.$id);
-        setRelatedProducts(filteredProducts);
+        console.log('Loading related products for product:', {
+          productId: product.$id,
+          productName: product.name,
+          categoryId: product.categoryId
+        });
+        
+        // Use the new fetchRelatedProducts function
+        const relatedProductsData = await fetchRelatedProducts(
+          product.$id, 
+          6 // Limit to 6 related products
+        );
+        
+        console.log('Related products loaded:', {
+          count: relatedProductsData.length,
+          products: relatedProductsData.map(p => ({ id: p.$id, name: p.name, categoryId: p.categoryId }))
+        });
+        
+        // If no related products found, try to get featured products as fallback
+        if (relatedProductsData.length === 0) {
+          console.log('No related products found, trying featured products as fallback...');
+          try {
+            const featuredProductsData = await fetchFeaturedProducts();
+            const filteredFeatured = featuredProductsData
+              .filter(p => p.$id !== product.$id)
+              .slice(0, 6);
+            
+            console.log('Featured products fallback loaded:', filteredFeatured.length);
+            setRelatedProducts(filteredFeatured);
+          } catch (fallbackError) {
+            console.error('Featured products fallback also failed:', fallbackError);
+            setRelatedProducts([]);
+          }
+        } else {
+          setRelatedProducts(relatedProductsData);
+        }
+        
+        console.log(`Loaded ${relatedProductsData.length} related products`);
+        
+        // Additional debugging for mobile
+        if (relatedProductsData.length === 0) {
+          console.warn('No related products found - this might indicate a data issue');
+        }
       } catch (error) {
         console.error('Failed to fetch related products:', error);
-        Toast.show({
-          type: 'error',
-          text1: 'Error',
-          text2: 'Failed to load related products.',
-        });
+        
+        // Try featured products as fallback
+        try {
+          console.log('Trying featured products as fallback due to error...');
+          const featuredProductsData = await fetchFeaturedProducts();
+          const filteredFeatured = featuredProductsData
+            .filter(p => p.$id !== product.$id)
+            .slice(0, 6);
+          
+          console.log('Featured products fallback loaded after error:', filteredFeatured.length);
+          setRelatedProducts(filteredFeatured);
+        } catch (fallbackError) {
+          console.error('Featured products fallback also failed:', fallbackError);
+          Toast.show({
+            type: 'error',
+            text1: 'Error',
+            text2: 'Failed to load related products.',
+          });
+          setRelatedProducts([]); // Ensure we set empty array on error
+        }
       } finally {
         setIsRelatedLoading(false);
       }
@@ -341,7 +396,22 @@ const ProductScreen = () => {
   };
 
   // Memoize related products
-  const memoizedRelatedProducts = useMemo(() => relatedProducts, [relatedProducts]);
+  const memoizedRelatedProducts = useMemo(() => {
+    console.log('Memoizing related products:', {
+      count: relatedProducts.length,
+      products: relatedProducts.map(p => ({ id: p.$id, name: p.name }))
+    });
+    return relatedProducts;
+  }, [relatedProducts]);
+
+  // Debug logging for mobile visibility
+  useEffect(() => {
+    console.log('Related products state changed:', {
+      count: relatedProducts.length,
+      isLoading: isRelatedLoading,
+      hasProducts: relatedProducts.length > 0
+    });
+  }, [relatedProducts, isRelatedLoading]);
 
   if (isProductLoading) {
     return (
@@ -511,44 +581,65 @@ const ProductScreen = () => {
         </View>
 
         {/* Related Products */}
-        {memoizedRelatedProducts.length > 0 && (
-          <View className="mt-8">
-            <Text className="text-xl font-bold mb-4" children="Related Products" />
-            {isRelatedLoading ? (
-              <ActivityIndicator size="small" color="#3B82F6" />
-            ) : (
+        <View className="mt-8 mb-8">
+          <Text className="text-xl font-bold mb-4 px-4" children="Related Products" />
+          {isRelatedLoading ? (
+            <View className="items-center py-8">
+              <ActivityIndicator size="large" color="#3B82F6" />
+              <Text className="text-gray-500 mt-4" children="Loading related products..." />
+            </View>
+          ) : memoizedRelatedProducts.length > 0 ? (
+            <View className="flex-1">
               <ScrollView
                 horizontal
                 showsHorizontalScrollIndicator={false}
+                contentContainerStyle={{ 
+                  paddingHorizontal: 16,
+                  paddingRight: 32,
+                  gap: 12,
+                  minHeight: 240
+                }}
                 className="flex-row"
-                contentContainerStyle={{ paddingRight: 16 }}
+                style={{ minHeight: 240 }}
+                bounces={false}
+                decelerationRate="fast"
               >
                 {memoizedRelatedProducts.map((relatedProduct) => (
-                                    <View key={relatedProduct.$id} className="mr-4">
-                                    <ProductCard
-                                      product={relatedProduct}
-                                      onPress={() => handleProductPress(relatedProduct.$id)}
-                                    />
-                                  </View>
-                                ))}
-                              </ScrollView>
-                            )}
-                          </View>
-                        )}
-                      </View>
-                
-                      {/* Quantity Modal */}
-                      <QuantityModal
-                        visible={isQuantityModalVisible}
-                        onClose={() => setIsQuantityModalVisible(false)}
-                        onConfirm={handleAddToCart}
-                        maxQuantity={product.stock - cartQuantity}
-                        currentCartQuantity={cartQuantity}
-                      />
-                
-                      <Toast />
-                    </ScrollView>
-                  );
-                };
-                
-                export default ProductScreen;
+                  <ProductCard
+                    key={relatedProduct.$id}
+                    product={relatedProduct}
+                    onPress={() => handleProductPress(relatedProduct.$id)}
+                    isRelatedProduct={true}
+                  />
+                ))}
+              </ScrollView>
+            </View>
+          ) : (
+            <View className="items-center py-8 bg-gray-50 rounded-lg mx-4">
+              <Text className="text-gray-500 text-center mb-2" children="No related products available" />
+              <Text className="text-gray-400 text-sm text-center mb-4" children="Try browsing other categories" />
+              <Button
+                onPress={() => router.push('/categories')}
+                className="bg-blue-500 px-4 py-2 rounded-lg"
+                children={<Text className="text-white font-medium" children="Browse Categories" />}
+              />
+            </View>
+          )}
+        </View>
+      </View>
+
+      {/* Quantity Modal */}
+      <QuantityModal
+        visible={isQuantityModalVisible}
+        onClose={() => setIsQuantityModalVisible(false)}
+        onConfirm={handleAddToCart}
+        maxQuantity={product.stock - cartQuantity}
+        currentCartQuantity={cartQuantity}
+      />
+
+      <Toast />
+    </ScrollView>
+  );
+};
+
+export default ProductScreen;
