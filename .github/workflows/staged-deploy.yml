@@ -2,7 +2,7 @@ name: Staged Deployment
 
 on:
   push:
-    branches: [main]
+    branches: [master]
   workflow_dispatch:
     inputs:
       deploy_to_production:
