@@ -96,7 +96,7 @@ const SignIn = () => {
               {/* Header */}
               <View className="items-center mb-8">
                 <Image
-                  source={require('../../assets/images/ratana.jpg')}
+                  source={require('../../assets/images/ratana.png')}
                   className="w-20 h-20 rounded-full mb-4"
                 />
                 <Text className="text-3xl font-bold text-gray-800 mb-2">

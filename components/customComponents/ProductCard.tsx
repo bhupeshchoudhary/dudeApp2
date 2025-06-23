@@ -145,21 +145,31 @@ const ProductCard: React.FC<ProductCardProps> = ({
   };
 
   // Use product data if provided, otherwise use individual props
-  const displayName = product?.name || name || '';
+  const displayName = product?.name || name || 'No Name';
   const displayPrice = isLoading 
     ? 'Loading...' 
     : product 
       ? `₹${adjustedPrice !== null ? adjustedPrice : product.price}` 
-      : price || '';
-  const displayMrp = product?.mrp ? `₹${product.mrp}` : mrp;
-  const displayDiscount = product?.discount ? `${product.discount}% OFF` : discount;
-  const displayWeight = product?.unit || weight;
+      : price || 'N/A';
+  const displayMrp = product?.mrp ? `₹${product.mrp}` : mrp || '';
+  const displayDiscount = (product?.discount && product.discount > 0) ? `${product.discount}% OFF` : (discount && discount !== '0' ? discount : '');
+  const displayWeight = product?.unit || weight || '';
   const displayImage = product ? { uri: product.imageUrl } : image || { uri: '' };
 
   const handleImageError = () => {
     console.warn('Image failed to load for product:', product?.name);
     setImageError(true);
   };
+
+  useEffect(() => {
+    if (!product) {
+      console.warn('ProductCard: No product data provided!');
+    } else {
+      if (!product.name) console.warn('ProductCard: Product missing name:', product);
+      if (!product.price) console.warn('ProductCard: Product missing price:', product);
+      if (!product.imageUrl) console.warn('ProductCard: Product missing imageUrl:', product);
+    }
+  }, [product]);
 
   return (
     <View
@@ -196,24 +206,24 @@ const ProductCard: React.FC<ProductCardProps> = ({
       <View className="p-2 flex-1 flex flex-col justify-between">
         <TouchableOpacity activeOpacity={0.7} onPress={onPress}>
           <Text
-            className={`font-semibold text-gray-800 ${dimensions.fontSize}`}
+            className={`font-semibold text-gray-900 ${dimensions.fontSize}`}
             numberOfLines={2}
             children={displayName}
           />
           {displayWeight && (
             <Text
-              className="text-gray-500 text-xs mt-1"
+              className="text-gray-600 text-xs mt-1"
               children={displayWeight}
             />
           )}
           <View className="flex-row items-center mt-1">
             <Text
-              className="font-bold text-base text-orange-600"
+              className="font-bold text-base text-orange-700"
               children={displayPrice}
             />
             {displayMrp && (
               <Text
-                className="text-gray-500 line-through ml-2 text-xs"
+                className="text-gray-400 line-through ml-2 text-xs"
                 children={displayMrp}
               />
             )}

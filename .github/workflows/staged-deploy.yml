@@ -1,0 +1,68 @@
+name: Staged Deployment
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+    inputs:
+      deploy_to_production:
+        description: 'Deploy to production'
+        required: false
+        default: false
+        type: boolean
+
+jobs:
+  deploy-internal:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+    - uses: actions/setup-node@v4
+      with:
+        node-version: '18'
+        cache: 'npm'
+    - run: npm ci
+    - run: node scripts/update-version.js
+    - uses: expo/expo-github-action@v8
+      with:
+        expo-version: latest
+        token: ${{ secrets.EXPO_TOKEN }}
+    - run: echo '${{ secrets.GOOGLE_SERVICE_ACCOUNT_KEY }}' > google-service-account.json
+    - run: eas build --platform android --profile production --non-interactive --wait
+    - run: eas submit --platform android --latest --non-interactive
+      env:
+        EAS_SUBMIT_ANDROID_TRACK: internal
+        GOOGLE_SERVICE_ACCOUNT_KEY: ${{ secrets.GOOGLE_SERVICE_ACCOUNT_KEY }}
+    - run: rm -f google-service-account.json
+  deploy-production:
+    needs: deploy-internal
+    runs-on: ubuntu-latest
+    if: github.event.inputs.deploy_to_production == 'true' || github.event_name == 'push'
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Setup Expo CLI
+      uses: expo/expo-github-action@v8
+      with:
+        expo-version: latest
+        token: ${{ secrets.EXPO_TOKEN }}
+        
+    - name: Create Google Service Account Key
+      run: |
+        echo '${{ secrets.GOOGLE_SERVICE_ACCOUNT_KEY }}' > google-service-account.json
+        
+    - name: Submit to Production
+      run: eas submit --platform android --latest --non-interactive
+      env:
+        EAS_SUBMIT_ANDROID_TRACK: production
+        GOOGLE_SERVICE_ACCOUNT_KEY: ${{ secrets.GOOGLE_SERVICE_ACCOUNT_KEY }}
+        
+    - name: Clean up
+      run: rm -f google-service-account.json
+      
+    - name: Notify production deployment success
+      if: success()
+      run: |
+        echo "🎉 App deployed to Production track!"
+        echo "Your app is now live on Google Play Store" 

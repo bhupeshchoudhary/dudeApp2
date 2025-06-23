@@ -48,7 +48,6 @@
     "react-dom": "18.3.1",
     "react-native": "0.76.9",
     "react-native-appwrite": "^0.6.0",
-    "react-native-fast-image": "^8.6.3",
     "react-native-gesture-handler": "~2.20.2",
     "react-native-maps": "1.18.0",
     "react-native-reanimated": "~3.16.1",
@@ -75,7 +74,6 @@
     "doctor": {
       "reactNativeDirectoryCheck": {
         "exclude": [
-          "react-native-fast-image",
           "react-native-appwrite"
         ],
         "listUnknownPackages": false
