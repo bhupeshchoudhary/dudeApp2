@@ -20,6 +20,8 @@ interface ProductCardProps {
   onPress?: () => void;
   showAddToCart?: boolean;
   isRelatedProduct?: boolean; // New prop for related products
+  cardWidth?: number;
+  cardHeight?: number;
 }
 
 const ProductCard: React.FC<ProductCardProps> = ({ 
@@ -33,7 +35,9 @@ const ProductCard: React.FC<ProductCardProps> = ({
   large,
   onPress,
   showAddToCart = false,
-  isRelatedProduct = false
+  isRelatedProduct = false,
+  cardWidth,
+  cardHeight
 }) => {
   const { user } = useGlobalContext() as { user: User | null };
   const [adjustedPrice, setAdjustedPrice] = useState<number | null>(null);
@@ -46,6 +50,15 @@ const ProductCard: React.FC<ProductCardProps> = ({
   
   // Calculate card dimensions based on props
   const getCardDimensions = () => {
+    if (cardWidth && cardHeight) {
+      return {
+        width: cardWidth,
+        height: cardHeight,
+        imageHeight: cardHeight - 100,
+        fontSize: 'text-xs',
+      };
+    }
+    
     if (isRelatedProduct) {
       // Fixed dimensions for related products to ensure consistency
       return {
@@ -175,6 +188,7 @@ const ProductCard: React.FC<ProductCardProps> = ({
     <View
       style={{
         width: dimensions.width,
+        height: dimensions.height,
         marginRight: isRelatedProduct ? 12 : 8,
       }}
       className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden flex flex-col"
@@ -200,10 +214,31 @@ const ProductCard: React.FC<ProductCardProps> = ({
               />
             </View>
           )}
+          {showAddToCart && product && (
+            <View style={{ position: 'absolute', left: 0, right: 0, bottom: -12, alignItems: 'center', zIndex: 2 }}>
+              <TouchableOpacity
+                onPress={handleAddToCart}
+                disabled={addingToCart}
+                className="bg-orange-500 rounded-lg py-1.5 px-4 flex-row items-center justify-center shadow-lg"
+                activeOpacity={0.8}
+              >
+                {addingToCart ? (
+                  <Text className="text-white text-xs font-medium">Adding...</Text>
+                ) : (
+                  <>
+                    <Ionicons name="add" size={14} color="white" />
+                    <Text className="text-white text-xs font-medium ml-1">
+                      Add to Cart
+                    </Text>
+                  </>
+                )}
+              </TouchableOpacity>
+            </View>
+          )}
         </View>
       </TouchableOpacity>
 
-      <View className="p-2 flex-1 flex flex-col justify-between">
+      <View className="p-2 flex-1 flex flex-col justify-between mt-2">
         <TouchableOpacity activeOpacity={0.7} onPress={onPress}>
           <Text
             className={`font-semibold text-gray-900 ${dimensions.fontSize}`}
@@ -223,34 +258,12 @@ const ProductCard: React.FC<ProductCardProps> = ({
             />
             {displayMrp && (
               <Text
-                className="text-gray-400 line-through ml-2 text-xs"
+                className="text-gray-400 line-through ml-2  text-xs"
                 children={displayMrp}
               />
             )}
           </View>
         </TouchableOpacity>
-
-        {showAddToCart && product && (
-          <View className="mt-2">
-            <TouchableOpacity
-              onPress={handleAddToCart}
-              disabled={addingToCart}
-              className="bg-orange-500 rounded-lg py-1.5 flex-row items-center justify-center"
-              activeOpacity={0.8}
-            >
-              {addingToCart ? (
-                <Text className="text-white text-xs font-medium">Adding...</Text>
-              ) : (
-                <>
-                  <Ionicons name="add" size={14} color="white" />
-                  <Text className="text-white text-xs font-medium ml-1">
-                    Add to Cart
-                  </Text>
-                </>
-              )}
-            </TouchableOpacity>
-          </View>
-        )}
       </View>
     </View>
   );

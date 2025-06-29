@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { View, ScrollView, ActivityIndicator } from 'react-native';
+import { View, ScrollView, ActivityIndicator, FlatList } from 'react-native';
 import { Text } from '@/components/ui/Text';
 import { fetchFeaturedProducts } from '../../../lib/fetchProducts';
 import { Product } from '@/types/productTypes';
@@ -55,22 +55,27 @@ const FeaturedProducts = () => {
     );
   }
 
+  // Limit to 8 items for homepage performance
+  const limitedProducts = products.slice(0, 8);
+
   return (
-    <ScrollView
+    <FlatList
+      data={limitedProducts}
       horizontal
       showsHorizontalScrollIndicator={false}
       contentContainerStyle={{ paddingRight: 16 }}
-      className="py-2"
-    >
-      {products.map((product) => (
+      keyExtractor={(item) => item.$id}
+      renderItem={({ item }) => (
         <ProductCard
-          key={product.$id}
-          product={product}
-          onPress={() => router.push(`/product/${product.$id}`)}
+          key={item.$id}
+          product={item}
+          onPress={() => router.push(`/product/${item.$id}`)}
           large={true}
+          cardWidth={140}
+          cardHeight={240}
         />
-      ))}
-    </ScrollView>
+      )}
+    />
   );
 };
 

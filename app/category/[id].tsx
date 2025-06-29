@@ -104,6 +104,8 @@ const CategoryScreen = () => {
         product={product}
         onPress={() => router.push(`/product/${product.$id}`)}
         showAddToCart={true}
+        cardWidth={170}
+        cardHeight={260}
       />
     </View>
   );

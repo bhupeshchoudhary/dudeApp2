@@ -1,15 +1,23 @@
-import { View, SafeAreaView, Text, TouchableOpacity, Dimensions, Image, Animated } from "react-native";
-import React, { useEffect, useRef } from "react";
+import { View, SafeAreaView, Text, TouchableOpacity, Dimensions, Image, Animated, ScrollView } from "react-native";
+import React, { useEffect, useRef, useState } from "react";
 import { LinearGradient } from "expo-linear-gradient";
 import { router, Redirect } from "expo-router";
 import { useGlobalContext } from "@/context/GlobalProvider";
 import { Ionicons } from '@expo/vector-icons';
 
 const Welcome = () => {
-  const { width, height } = Dimensions.get("window");
+  const [screenData, setScreenData] = useState(Dimensions.get("window"));
   const { isLogged } = useGlobalContext();
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const slideAnim = useRef(new Animated.Value(50)).current;
+
+  useEffect(() => {
+    const onChange = (result: any) => {
+      setScreenData(result.window);
+    };
+    const subscription = Dimensions.addEventListener("change", onChange);
+    return () => subscription?.remove();
+  }, []);
 
   useEffect(() => {
     Animated.parallel([
@@ -30,6 +38,20 @@ const Welcome = () => {
     return <Redirect href="/home" />;
   }
 
+  const { width, height } = screenData;
+  const isSmallScreen = height < 700;
+  const isTablet = width > 768;
+  const isLandscape = width > height;
+
+  // Dynamic sizing based on screen size
+  const logoSize = isSmallScreen ? 45 : isTablet ? 80 : 60;
+  const titleSize = isSmallScreen ? 36 : isTablet ? 60 : 48;
+  const subtitleSize = isSmallScreen ? 16 : isTablet ? 22 : 18;
+  const featureTextSize = isSmallScreen ? 14 : isTablet ? 20 : 16;
+  const buttonTextSize = isSmallScreen ? 16 : isTablet ? 20 : 18;
+  const welcomeTextSize = isSmallScreen ? 24 : isTablet ? 36 : 28;
+  const descriptionSize = isSmallScreen ? 14 : isTablet ? 18 : 16;
+
   return (
     <SafeAreaView className="flex-1">
       <LinearGradient
@@ -39,95 +61,209 @@ const Welcome = () => {
         className="flex-1"
         style={{ width, height }}
       >
-        <View className="flex-1 px-6 pt-12">
+        <ScrollView 
+          className="flex-1"
+          contentContainerStyle={{ 
+            flexGrow: 1,
+            paddingHorizontal: isTablet ? 48 : 24,
+            paddingTop: isSmallScreen ? 20 : 48,
+            paddingBottom: 24
+          }}
+          showsVerticalScrollIndicator={false}
+        >
           {/* Logo and Brand Section */}
           <Animated.View 
-            className="items-center mb-8"
+            className="items-center"
             style={{
               opacity: fadeAnim,
-              transform: [{ translateY: slideAnim }]
+              transform: [{ translateY: slideAnim }],
+              marginBottom: isSmallScreen ? 24 : isTablet ? 48 : 32,
+              flex: isLandscape ? 0 : 1,
+              justifyContent: isLandscape ? 'flex-start' : 'center',
+              maxHeight: isSmallScreen ? 120 : 200
             }}
           >
-            <View className="bg-[#F7C873]/80 p-6 rounded-full mb-4 border-4 border-[#E86A2B]">
-              <Ionicons name="cart" size={60} color="#E86A2B" />
+            <View 
+              className="bg-[#F7C873]/80 rounded-full border-4 border-[#E86A2B] items-center justify-center"
+              style={{
+                width: logoSize + 32,
+                height: logoSize + 32,
+                marginBottom: isSmallScreen ? 12 : 16
+              }}
+            >
+              <Ionicons name="cart" size={logoSize} color="#E86A2B" />
             </View>
-            <Text className="text-white text-5xl font-bold mb-2">Ratana</Text>
-            <Text className="text-[#7C4A1E] text-lg font-semibold">Your Shopping Paradise</Text>
+            <Text 
+              className="text-white font-bold mb-2"
+              style={{ fontSize: titleSize, lineHeight: titleSize * 1.2 }}
+            >
+              Ratana
+            </Text>
+            <Text 
+              className="text-[#7C4A1E] font-semibold text-center"
+              style={{ fontSize: subtitleSize }}
+            >
+              Your Shopping Paradise
+            </Text>
           </Animated.View>
 
           {/* Features Section */}
           <Animated.View 
-            className="mb-8"
             style={{
               opacity: fadeAnim,
-              transform: [{ translateY: slideAnim }]
+              transform: [{ translateY: slideAnim }],
+              marginBottom: isSmallScreen ? 20 : 32,
+              flex: isLandscape ? 0 : 1,
+              justifyContent: 'center'
             }}
           >
-            <View className="flex-row items-center mb-4">
-              <View className="bg-[#EBA05C]/80 p-2 rounded-full mr-3">
-                <Ionicons name="shield-checkmark" size={20} color="#7C4A1E" />
+            <View 
+              className={isLandscape && isTablet ? "flex-row justify-around" : ""}
+              style={{ gap: isTablet ? 16 : 12 }}
+            >
+              <View className="flex-row items-center mb-3">
+                <View 
+                  className="bg-[#EBA05C]/80 rounded-full mr-3 items-center justify-center"
+                  style={{ 
+                    width: isSmallScreen ? 32 : 40, 
+                    height: isSmallScreen ? 32 : 40 
+                  }}
+                >
+                  <Ionicons 
+                    name="shield-checkmark" 
+                    size={isSmallScreen ? 16 : 20} 
+                    color="#7C4A1E" 
+                  />
+                </View>
+                <Text 
+                  className="text-[#7C4A1E] font-semibold flex-1"
+                  style={{ fontSize: featureTextSize }}
+                >
+                  Secure Shopping
+                </Text>
               </View>
-              <Text className="text-[#7C4A1E] text-lg font-semibold">Secure Shopping</Text>
-            </View>
-            <View className="flex-row items-center mb-4">
-              <View className="bg-[#F7C873]/80 p-2 rounded-full mr-3">
-                <Ionicons name="flash" size={20} color="#E86A2B" />
+              <View className="flex-row items-center mb-3">
+                <View 
+                  className="bg-[#F7C873]/80 rounded-full mr-3 items-center justify-center"
+                  style={{ 
+                    width: isSmallScreen ? 32 : 40, 
+                    height: isSmallScreen ? 32 : 40 
+                  }}
+                >
+                  <Ionicons 
+                    name="flash" 
+                    size={isSmallScreen ? 16 : 20} 
+                    color="#E86A2B" 
+                  />
+                </View>
+                <Text 
+                  className="text-[#E86A2B] font-semibold flex-1"
+                  style={{ fontSize: featureTextSize }}
+                >
+                  Fast Delivery
+                </Text>
               </View>
-              <Text className="text-[#E86A2B] text-lg font-semibold">Fast Delivery</Text>
-            </View>
-            <View className="flex-row items-center">
-              <View className="bg-[#E86A2B]/80 p-2 rounded-full mr-3">
-                <Ionicons name="gift" size={20} color="#F7C873" />
+              <View className="flex-row items-center">
+                <View 
+                  className="bg-[#E86A2B]/80 rounded-full mr-3 items-center justify-center"
+                  style={{ 
+                    width: isSmallScreen ? 32 : 40, 
+                    height: isSmallScreen ? 32 : 40 
+                  }}
+                >
+                  <Ionicons 
+                    name="gift" 
+                    size={isSmallScreen ? 16 : 20} 
+                    color="#F7C873" 
+                  />
+                </View>
+                <Text 
+                  className="text-[#F7C873] font-semibold flex-1"
+                  style={{ fontSize: featureTextSize }}
+                >
+                  Ratana Cash Rewards
+                </Text>
               </View>
-              <Text className="text-[#F7C873] text-lg font-semibold">Ratana Cash Rewards</Text>
             </View>
           </Animated.View>
 
           {/* Welcome Message */}
           <Animated.View 
-            className="mb-8"
             style={{
               opacity: fadeAnim,
-              transform: [{ translateY: slideAnim }]
+              transform: [{ translateY: slideAnim }],
+              marginBottom: isSmallScreen ? 24 : 32,
+              flex: isLandscape ? 0 : 1,
+              justifyContent: 'center'
             }}
           >
-            <Text className="text-white text-3xl font-bold mb-4">
+            <Text 
+              className="text-white font-bold mb-4 text-center"
+              style={{ 
+                fontSize: welcomeTextSize, 
+                lineHeight: welcomeTextSize * 1.3,
+                marginBottom: isSmallScreen ? 12 : 16
+              }}
+            >
               Welcome to Ratana!
             </Text>
-            <Text className="text-[#7C4A1E] text-lg leading-6 mb-4">
+            <Text 
+              className="text-[#7C4A1E] text-center leading-relaxed"
+              style={{ 
+                fontSize: descriptionSize,
+                lineHeight: descriptionSize * 1.5,
+                paddingHorizontal: isTablet ? 40 : 0
+              }}
+            >
               Your one-stop destination for amazing deals. Shop smart, earn rewards, and enjoy a seamless shopping experience.
             </Text>
           </Animated.View>
 
           {/* Action Buttons */}
           <Animated.View 
-            className="mt-auto mb-8 "
             style={{
               opacity: fadeAnim,
-              transform: [{ translateY: slideAnim }]
+              transform: [{ translateY: slideAnim }],
+              marginTop: 'auto',
+              paddingTop: isSmallScreen ? 16 : 24
             }}
           >
             <TouchableOpacity
               onPress={() => router.push("/(auth)/sign-up")}
-              className="bg-[#E86A2B] py-4 rounded-xl shadow-lg mb-4"
+              className="bg-[#E86A2B] rounded-xl shadow-lg"
+              style={{
+                paddingVertical: isSmallScreen ? 14 : isTablet ? 20 : 16,
+                marginBottom: isSmallScreen ? 12 : 16,
+                marginHorizontal: isTablet ? width * 0.1 : 0
+              }}
               activeOpacity={0.8}
             >
-              <Text className="text-white text-lg font-semibold text-center">
+              <Text 
+                className="text-white font-semibold text-center"
+                style={{ fontSize: buttonTextSize }}
+              >
                 Get Started
               </Text>
             </TouchableOpacity>
 
             <TouchableOpacity
               onPress={() => router.push("/(auth)/sign-in")}
-              className="bg-[#7C4A1E]/80 py-4 rounded-xl"
+              className="bg-[#7C4A1E]/80 rounded-xl"
+              style={{
+                paddingVertical: isSmallScreen ? 14 : isTablet ? 20 : 16,
+                marginHorizontal: isTablet ? width * 0.1 : 0
+              }}
               activeOpacity={0.8}
             >
-              <Text className="text-[#F7C873] text-lg font-semibold text-center">
+              <Text 
+                className="text-[#F7C873] font-semibold text-center"
+                style={{ fontSize: buttonTextSize }}
+              >
                 I already have an account
               </Text>
             </TouchableOpacity>
           </Animated.View>
-        </View>
+        </ScrollView>
       </LinearGradient>
     </SafeAreaView>
   );

@@ -59,24 +59,7 @@ const NotificationSettingsScreen = () => {
   return (
     <SafeAreaView className="flex-1 bg-gray-50">
       {/* Header */}
-      <LinearGradient
-        colors={["#F7C873", "#EBA05C", "#E86A2B", "#7C4A1E"]}
-        start={{ x: 0, y: 0 }}
-        end={{ x: 1, y: 0 }}
-        className="px-4 py-6"
-      >
-        <View className="flex-row items-center">
-          <TouchableOpacity 
-            onPress={() => router.back()}
-            className="mr-4 p-2 rounded-full bg-white/20"
-          >
-            <Ionicons name="arrow-back" size={24} color="#fff" />
-          </TouchableOpacity>
-          <Text className="text-2xl font-bold text-white">
-            Notification Settings
-          </Text>
-        </View>
-      </LinearGradient>
+
 
       <ScrollView className="flex-1" showsVerticalScrollIndicator={false}>
         {/* General Settings */}
@@ -149,28 +132,7 @@ const NotificationSettingsScreen = () => {
           />
         </View>
 
-        {/* Test Notification */}
-        <View className="mt-6 px-4">
-          <TouchableOpacity
-            onPress={handleSendTest}
-            disabled={sendingTest}
-            className="bg-orange-500 rounded-lg p-4 items-center"
-            activeOpacity={0.8}
-          >
-            {sendingTest ? (
-              <View className="flex-row items-center">
-                <Ionicons name="hourglass" size={20} color="#fff" />
-                <Text className="text-white font-semibold ml-2">Sending...</Text>
-              </View>
-            ) : (
-              <View className="flex-row items-center">
-                <Ionicons name="send" size={20} color="#fff" />
-                <Text className="text-white font-semibold ml-2">Send Test Notification</Text>
-              </View>
-            )}
-          </TouchableOpacity>
-        </View>
-
+      
         {/* Info Section */}
         <View className="mt-6 px-4 pb-8">
           <View className="bg-blue-50 rounded-lg p-4">

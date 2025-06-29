@@ -51,7 +51,7 @@ const TopCategories = () => {
   }
 
   return (
-    <View className="py-2">
+    <View className="py-2 px-2">
       <ScrollView
         horizontal
         showsHorizontalScrollIndicator={false}

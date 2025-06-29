@@ -11,7 +11,7 @@ interface CategoryCardProps {
 
 export const CategoryCard: React.FC<CategoryCardProps> = ({ title, startingPrice, image, onPress }) => (
   <TouchableOpacity 
-    className="w-full bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden"
+    className="w-full bg-white shadow-sm border border-gray-200 overflow-hidden"
     activeOpacity={0.8}
     onPress={onPress}
     accessibilityRole="button"

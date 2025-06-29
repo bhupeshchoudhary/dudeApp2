@@ -507,7 +507,7 @@ const CartItemCard: React.FC<CartItemCardProps & {
                       />
                       <View className="flex-1 ml-4">
                         <Text className="font-medium text-base text-gray-900" children={item.name} numberOfLines={2} />
-                        <Text className="text-blue-600 font-semibold mt-1" children={`₹${item.price}`} />
+                        <Text className="text-green-600 font-semibold mt-1" children={`₹${item.price}`} />
                         <Text className="text-gray-500 text-sm mt-1" children={`Total: ₹${(item.price * item.quantity).toFixed(2)}`} />
                       </View>
                     </View>

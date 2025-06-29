@@ -54,9 +54,9 @@ const ProductOfTheDay = () => {
   }, []);
 
   return (
-    <View className="p-4">
-      <Card className="bg-gradient-to-r from-yellow-50 to-orange-50 p-4 rounded-xl border border-orange-200">
-        <View className="flex-row items-center mb-4">
+    <View className="p-0 px-4">
+      <Card className="bg-gradient-to-r from-yellow-50 to-orange-50 p-4 rounded-none border border-orange-200">
+        <View className="flex-row items-center mb-2">
           <View className="bg-orange-500 rounded-full p-2 mr-3">
             <Text className="text-white text-lg font-bold">🔥</Text>
           </View>
@@ -84,15 +84,36 @@ const ProductOfTheDay = () => {
             className="py-2"
           >
             {products.map((product, index) => {
-              console.log(`Rendering product ${index}:`, product.name);
+              const p: any = product;
+              const fullProduct = {
+                $collectionId: p.$collectionId || '',
+                $createdAt: p.$createdAt || '',
+                $databaseId: p.$databaseId || '',
+                $id: p.$id || p.productId || String(index),
+                $permissions: p.$permissions || [],
+                $updatedAt: p.$updatedAt || '',
+                categoryId: p.categoryId || '',
+                createdAt: p.createdAt || '',
+                description: p.description || '',
+                discount: p.discount ?? 0,
+                imageUrl: p.imageUrl || '',
+                isFeatured: p.isFeatured ?? false,
+                mrp: p.mrp ?? null,
+                unit: p.unit || '',
+                name: p.name || 'No Name',
+                price: p.price ?? 0,
+                productId: p.productId || '',
+                stock: p.stock ?? 0,
+                updatedAt: p.updatedAt || '',
+              };
               return (
                 <ProductCard
-                  key={product.$id || product.productId || index}
-                  image={{ uri: product.imageUrl }}
-                  name={product.name}
-                  price={`₹${product.price}`}
-                  onPress={() => handleProductPress(product.$id)}
+                  key={fullProduct.$id}
+                  product={fullProduct}
+                  onPress={() => handleProductPress(fullProduct.$id)}
                   large={true}
+                  cardWidth={120}
+                  cardHeight={180}
                 />
               );
             })}
@@ -101,6 +122,6 @@ const ProductOfTheDay = () => {
       </Card>
     </View>
   );
-};
+};  
 
 export default ProductOfTheDay;

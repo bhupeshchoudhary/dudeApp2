@@ -209,7 +209,7 @@ const Home: React.FC = () => {
         <LocationHeader />
         
         {/* Search Bar */}
-        <View className="flex-row items-center bg-[#F7C873] rounded-full mt-4 px-4 py-2">
+        <View className="flex-row items-center bg-white rounded-full mt-4 px-4 py-1">
           <Ionicons name="search" size={20} color="#7C4A1E" />
           <TextInput
             placeholder="Search products..."
@@ -259,8 +259,8 @@ const Home: React.FC = () => {
         {/* Default Home Sections */}
         {!searching && <ProductOfTheDay />}
         {!searching && topCategories.length > 0 && (
-          <View className="px-4 bg-[#F7C873] rounded-2xl mt-4 pb-2">
-            <View className="flex-row justify-between items-center mb-4 pt-4">
+          <View className="px-4 bg-white  mt-0 pb-2">
+            <View className="flex-row justify-between items-center mb-0 pt-4">
               <Text className="text-xl font-bold text-[#E86A2B]" children="Top Categories" />
               <Button
                 onPress={() => handleViewAll('categories')}
@@ -273,12 +273,12 @@ const Home: React.FC = () => {
         )}
         {!searching && featuredProducts.length > 0 && (
           <View className="px-4 mt-6">
-            <View className="flex-row justify-between items-center mb-4">
-              <Text className="text-xl font-bold" children="Featured Products" />
+            <View className="flex-row justify-between items-center mb-2">
+              <Text className="text-xl font-bold text-orange-500" children="Featured Products" />
               <Button
                 onPress={() => handleViewAll('featured')}
                 className="bg-transparent"
-                children={<Text className="text-blue-500" children="View All" />}
+                children={<Text className="text-orange-500" children="View All" />}
               />
             </View>
             <FeaturedProducts />

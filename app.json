@@ -2,7 +2,7 @@
   "expo": {
     "name": "Ratana - Retailer Order App",
     "slug": "ratana-retailer",
-    "version": "1.0.8",
+    "version": "1.1.0",
     "orientation": "portrait",
     "icon": "./assets/images/ratana.png",
     "userInterfaceStyle": "light",
@@ -20,7 +20,7 @@
         "backgroundColor": "#ffffff"
       },
       "package": "com.sumit9897.dude",
-      "versionCode": 19,
+      "versionCode": 21,
       "googleServicesFile": "./google-services.json",
       "permissions": [
         "android.permission.ACCESS_COARSE_LOCATION",
